@@ -1,4 +1,7 @@
 services:
+  # ============================================================================
+  # 1. Base Relacional: PostgreSQL 16 (Transacciones, Inventario y Contratos)
+  # ============================================================================
   postgres:
     image: postgres:16-alpine
     container_name: kapehtrace-postgres
@@ -20,6 +23,9 @@ services:
       timeout: 5s
       retries: 5
 
+  # ============================================================================
+  # 2. Base Documental: MongoDB 7.0 (Fichas SCA y Análisis de Laboratorio)
+  # ============================================================================
   mongodb:
     image: mongo:7.0
     container_name: kapehtrace-mongodb
@@ -40,6 +46,9 @@ services:
       timeout: 5s
       retries: 5
 
+  # ============================================================================
+  # 3. Base de Grafos: Neo4j 5.15 (Linaje de Mezclas, Custodia y Trazabilidad)
+  # ============================================================================
   neo4j:
     image: neo4j:5.15-community
     container_name: kapehtrace-neo4j
@@ -50,7 +59,7 @@ services:
       NEO4J_dbms_memory_heap_initial__size: 512M
       NEO4J_dbms_memory_heap_max__size: 1G
     ports:
-      - "${NEO4J_HTTP_PORT:-7474}:7474" # Interfaz Web Browser
+      - "${NEO4J_HTTP_PORT:-7474}:7474" # Panel Web Browser para demostración
       - "${NEO4J_BOLT_PORT:-7687}:7687" # Protocolo Bolt para Backend Driver
     volumes:
       - neo4j_data:/data
@@ -62,6 +71,51 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ============================================================================
+  # 4. Backend Orquestador Políglota: Node.js + TypeScript (Express API REST)
+  # ============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kapehtrace-backend
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      NODE_ENV: production
+      PORT: 8000
+      HOST: 0.0.0.0
+
+      # Conexión Relacional mediante Red Interna de Docker
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-kapeh_trace_db}
+      POSTGRES_USER: ${POSTGRES_USER:-kapeh_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kapeh_secret_2026}
+
+      # Conexión Documental mediante Red Interna de Docker
+      MONGO_HOST: mongodb
+      MONGO_PORT: 27017
+      MONGO_DB: ${MONGO_DB:-kapeh_trace_docs}
+      MONGO_USER: ${MONGO_USER:-kapeh_admin}
+      MONGO_PASSWORD: ${MONGO_PASSWORD:-kapeh_secret_2026}
+
+      # Conexión de Grafos mediante Red Interna de Docker
+      NEO4J_HOST: neo4j
+      NEO4J_BOLT_PORT: 7687
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-kapeh_secret_2026}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    networks:
+      - kapeh-network
 
 volumes:
   postgres_data:
