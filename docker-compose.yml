@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kapehtrace-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kapeh_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kapeh_secret_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-kapeh_trace_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/relational/schema:/docker-entrypoint-initdb.d:ro
+    networks:
+      - kapeh-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kapeh_admin} -d ${POSTGRES_DB:-kapeh_trace_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo:7.0
+    container_name: kapehtrace-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-kapeh_admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-kapeh_secret_2026}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-kapeh_trace_docs}
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - kapeh-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: kapehtrace-neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-kapeh_secret_2026}
+      NEO4J_dbms_memory_pagecache_size: 512M
+      NEO4J_dbms_memory_heap_initial__size: 512M
+      NEO4J_dbms_memory_heap_max__size: 1G
+    ports:
+      - "${NEO4J_HTTP_PORT:-7474}:7474" # Interfaz Web Browser
+      - "${NEO4J_BOLT_PORT:-7687}:7687" # Protocolo Bolt para Backend Driver
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    networks:
+      - kapeh-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:7474"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+  mongo_data:
+    driver: local
+  neo4j_data:
+    driver: local
+  neo4j_logs:
+    driver: local
+
+networks:
+  kapeh-network:
+    driver: bridge
