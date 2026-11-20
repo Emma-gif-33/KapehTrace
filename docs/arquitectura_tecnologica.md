@@ -46,32 +46,32 @@ La premisa central es el **desacoplamiento total**:
 * **Restricción de Seguridad:** Consume exclusivamente los endpoints de la API REST. No ejecuta lógica de persistencia ni cálculos de linaje.
 
 ### 2.2. Capa de Controladores y Rutas (API Gateway Interno)
-* **Tecnología:** FastAPI (Python 3.11+).
+* **Tecnología:** Node.js (v20+ LTS) con TypeScript y Express.
 * **Responsabilidad:**
   * Enrutamiento de peticiones HTTP (`GET`, `POST`, `PUT`, `DELETE`).
-  * Validación sintáctica y semántica de entradas mediante modelos **Pydantic v2**.
-  * Generación y publicación automática del contrato interactivo **Swagger UI (`/docs`)**.
+  * Validación sintáctica y semántica de entradas mediante esquemas **Zod** tipados estáticamente.
+  * Generación y publicación del contrato interactivo **Swagger UI (`/api-docs`)** con OpenAPI 3.0.
   * Serialización de respuestas en formato DTO (*Data Transfer Object*) unificado.
-  * Manejo global de excepciones y códigos de estado HTTP (400, 404, 409, 500).
+  * Manejo global de excepciones y códigos de estado HTTP (400, 404, 409, 500) mediante middleware centralizado de errores.
 
 ### 2.3. Capa de Servicios de Aplicación (Orquestador Políglota)
 * **Responsabilidad:**
-  * Coordinar operaciones que involucran dos o más bases de datos.
+  * Coordinar operaciones que involucran dos o más bases de datos en TypeScript.
   * Implementar la máquina de estados de los lotes (`DISPONIBLE` -> `EN_PROCESO` -> `EN_CUARENTENA` -> `EMBARCADO`).
   * Aplicar el patrón de compensación (Saga orquestada) cuando una operación distribuida falla a mitad del proceso.
   * Consolidar respuestas compuestas (ej. Pasaporte del Lote = SQL + Mongo + Neo4j) antes de retornarlas al frontend.
 
 ### 2.4. Capa de Repositorios Especializados
 * **`RelationalRepository`:**
-  * Implementado con **SQLAlchemy 2.0 / asyncpg**.
+  * Implementado con el driver oficial **`pg` (node-postgres)** mediante pool de conexiones optimizado.
   * Encapsula consultas transaccionales parametrizadas (evitando inyecciones SQL).
   * Controla los bloques transaccionales atómicos (`BEGIN`, `COMMIT`, `ROLLBACK`) en PostgreSQL.
 * **`DocumentRepository`:**
-  * Implementado con el driver asíncrono **Motor / PyMongo**.
+  * Implementado con el driver oficial **`mongodb` (MongoClient)** para Node.js / TypeScript.
   * Gestiona las colecciones `fichas_calidad_sca` y `expedientes_certificacion`.
   * Valida la estructura de documentos BSON y consultas por rangos de atributos sensoriales.
 * **`GraphRepository`:**
-  * Implementado con el **Neo4j Official Python Driver (Protocolo Bolt)**.
+  * Implementado con el **`neo4j-driver` oficial de Neo4j para JavaScript/TypeScript (Protocolo Bolt)**.
   * Ejecuta consultas Cypher parametrizadas para creación de nodos, relaciones ponderadas y algoritmos de recorrido de caminos (*Pathfinding* e impacto en cascada).
 
 ---
@@ -82,7 +82,7 @@ Siguiendo el requerimiento de la Sección 7.3 del documento de la UPChiapas, se 
 
 | Componente | Opción Elegida | Alternativas Evaluadas | Criterio de Selección y Justificación |
 | :--- | :--- | :--- | :--- |
-| **Lenguaje y Framework Backend** | **Python 3.11 + FastAPI** | Node.js (Express), Java (Spring Boot) | **1. Drivers oficiales maduros:** Python posee soporte de primer nivel para PostgreSQL (asyncpg/SQLAlchemy), MongoDB (Motor) y Neo4j (Driver oficial Bolt).<br>**2. Documentación viva Swagger:** FastAPI genera OpenAPI 3.0 automáticamente a partir del código tipado, entregando a la compañera del frontend una interfaz interactiva sin trabajo extra.<br>**3. Velocidad y asincronía:** Excelente rendimiento con `async/await` nativo para consultar los tres motores en paralelo. |
+| **Lenguaje y Framework Backend** | **Node.js (v20+ LTS) + TypeScript + Express** | Python (FastAPI), Java (Spring Boot) | **1. Ecosistema unificado en TypeScript:** Permite tipado estricto de extremo a extremo, compartiendo interfaces DTO con el frontend si fuera necesario.<br>**2. Drivers oficiales nativos de alto rendimiento:** Node.js cuenta con drivers oficiales de primer nivel mantenidos directamente por los creadores: `pg` (PostgreSQL), `mongodb` (MongoDB Inc.) y `neo4j-driver` (Neo4j Inc.).<br>**3. Validación robusta con Zod:** Garantiza tipado seguro en tiempo de compilación y en tiempo de ejecución.<br>**4. Documentación OpenAPI 3.0:** Se expone mediante `swagger-ui-express` en la ruta `/api-docs`. |
 | **Motor Relacional** | **PostgreSQL 16** | MySQL 8, MariaDB | PostgreSQL ofrece un estándar SQL estricto, excelente soporte de tipos numéricos exactos (`NUMERIC` para finanzas e inventario de café), restricciones de integridad avanzadas y transacciones ACID nativas. |
 | **Motor Documental** | **MongoDB 7** | CouchDB, RavenDB | MongoDB es el estándar de facto para documentos BSON, permite esquemas dinámicos para evaluaciones de calidad heterogéneas, soporta validación nativa `$jsonSchema` y consultas rápidas por subdocumentos anidados. |
 | **Motor de Grafos** | **Neo4j 5 Community** | ArangoDB, Memgraph | Neo4j utiliza el lenguaje Cypher, el estándar más expresivo y legible para recorridos de caminos y linaje de transformación. Cuenta con visualizador web nativo integrado (Neo4j Browser en el puerto 7474) para demostración en clase. |
