@@ -1,4 +1,4 @@
-# KapehTrace ☕
+# KapehTrace
 ### Sistema Integrado de Trazabilidad, Calidad y Cadena de Custodia para Café de Especialidad
 
 **Universidad Politécnica de Chiapas**  
@@ -7,7 +7,7 @@
 
 ---
 
-## 📌 Descripción del Proyecto
+## Descripción del Proyecto
 
 **KapehTrace** (del tseltal *Kapeh* - café, y *Trace* - trazabilidad) es una solución de software empresarial diseñada para cooperativas y exportadoras de café de especialidad en Chiapas. Resuelve la pérdida de origen en mezclas en cascada, la heterogeneidad de evaluaciones sensoriales y la rigidez de contratos internacionales coordinando de manera justificada **tres paradigmas de bases de datos**:
 
@@ -17,7 +17,7 @@
 
 ---
 
-## 🏛️ Arquitectura del Sistema
+## Arquitectura del Sistema
 
 El sistema implementa una arquitectura en capas desacoplada. La interfaz gráfica (Frontend) consume exclusivamente una API REST orquestadora sin conectarse directamente a ninguna base de datos:
 
@@ -38,7 +38,7 @@ El sistema implementa una arquitectura en capas desacoplada. La interfaz gráfic
 
 ---
 
-## 📂 Organización del Repositorio
+## Organización del Repositorio
 
 El proyecto sigue con exactitud la estructura recomendada en la **Sección 10 de la guía docente de la UPChiapas**:
 
@@ -72,7 +72,7 @@ eval.c3.2026.11/
 
 ---
 
-## 🚀 Guía de Despliegue Rápido (3 Pasos)
+## Guía de Despliegue Rápido (3 Pasos)
 
 ### Requisitos Previos
 * [Docker Desktop](https://www.docker.com/products/docker-desktop/) (con Docker Compose v2) instalado y en ejecución.
@@ -116,7 +116,7 @@ docker exec -i kapehtrace-neo4j cypher-shell -u neo4j -p kapeh_secret_2026 < dat
 
 ---
 
-## 🧪 Verificación Automatizada (Las 7 Pruebas Obligatorias)
+## Verificación Automatizada (Las 7 Pruebas Obligatorias)
 
 Para comprobar que los tres motores y el backend orquestador funcionan correctamente de extremo a extremo, ejecuta el runner automatizado:
 
@@ -135,7 +135,7 @@ El script verificará automáticamente:
 
 ---
 
-## 🌐 Puntos de Acceso para Demostración y Pruebas
+## Puntos de Acceso para Demostración y Pruebas
 
 | Servicio | URL / Puerto | Credenciales | Propósito |
 | :--- | :--- | :--- | :--- |
@@ -147,6 +147,6 @@ El script verificará automáticamente:
 
 ---
 
-## 📄 Cuaderno de Trabajo en Google Docs
+## Cuaderno de Trabajo en Google Docs
 El proyecto cuenta con seguimiento exhaustivo en Google Docs estructurado en 8 pestañas temáticas:
-👉 **[KapehTrace - Cuaderno Integrador de Bases de Datos en Google Docs](https://docs.google.com/document/d/102YvxAon2Ffx5aSCk-MGueW64aeHCcvAwSLCxYSi_VQ/edit)**
+**[KapehTrace - Cuaderno Integrador de Bases de Datos en Google Docs](https://docs.google.com/document/d/102YvxAon2Ffx5aSCk-MGueW64aeHCcvAwSLCxYSi_VQ/edit)**
