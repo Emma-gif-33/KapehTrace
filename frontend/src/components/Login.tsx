@@ -1,389 +1,336 @@
 import React, { useState } from 'react';
-import { 
-  Coffee, 
-  Lock, 
-  Mail, 
-  Eye, 
-  EyeOff, 
-  Database, 
-  FileText, 
-  GitFork, 
-  CheckCircle2, 
-  AlertCircle,
-  ArrowRight,
-  ShieldCheck,
-  Award,
-  Truck,
-  Briefcase
-} from 'lucide-react';
+import { ChevronDown, ArrowRight } from 'lucide-react';
 import { User, UserRole } from '../types/auth';
 
 interface LoginProps {
   onLoginSuccess: (user: User) => void;
 }
 
-interface DemoAccount {
+interface DemoProfile {
+  initials: string;
+  name: string;
+  roleTitle: string;
   email: string;
   role: UserRole;
-  title: string;
-  name: string;
   organization: string;
-  licenseNumber?: string;
-  icon: React.ElementType;
-  badgeColor: string;
-  description: string;
 }
 
-const DEMO_ACCOUNTS: DemoAccount[] = [
+const DEMO_PROFILES: DemoProfile[] = [
   {
-    email: 'admin@kapehtrace.com',
-    role: 'ADMIN_COMERCIAL',
-    title: 'Administrador Comercial / Finanzas',
-    name: 'Lic. Rodrigo Castellanos',
-    organization: 'Kapeh Chiapas Export S.A. de C.V.',
-    icon: Briefcase,
-    badgeColor: 'border-amber-500/30 text-amber-300 bg-amber-500/10',
-    description: 'Gestión de contratos internacionales, inventario en bodega y control de pagos (PostgreSQL).'
-  },
-  {
-    email: 'qgrader@kapehtrace.com',
-    role: 'Q_GRADER',
-    title: 'Catador Certificado Q-Grader',
-    name: 'Ing. Elena Morales Ruiz',
-    organization: 'Laboratorio de Catación San Cristóbal',
-    licenseNumber: 'Q-94821 SCA Certified',
-    icon: Award,
-    badgeColor: 'border-emerald-500/30 text-emerald-300 bg-emerald-500/10',
-    description: 'Captura de protocolos sensoriales SCA de 10 atributos y perfiles de taza (MongoDB).'
-  },
-  {
-    email: 'logistica@kapehtrace.com',
+    initials: 'LM',
+    name: 'Lucía Méndez',
+    roleTitle: 'Jefa de Trazabilidad',
+    email: 'lucia@kapehtrace.mx',
     role: 'JEFE_LOGISTICA',
-    title: 'Jefe de Logística y Trazabilidad',
-    name: 'Manuel Santiz Gómez',
-    organization: 'Red de Beneficios Comunitarios Los Altos',
-    icon: Truck,
-    badgeColor: 'border-cyan-500/30 text-cyan-300 bg-cyan-500/10',
-    description: 'Control de cosechas, mezclas M:N y rastreo del linaje parcela-contenedor (Neo4j).'
+    organization: 'Red de Beneficios Comunitarios Los Altos'
   },
   {
-    email: 'auditor@kapehtrace.com',
+    initials: 'DL',
+    name: 'Daniel López',
+    roleTitle: 'Catador Q-Grader',
+    email: 'daniel@kapehtrace.mx',
+    role: 'Q_GRADER',
+    organization: 'Laboratorio de Catación San Cristóbal'
+  },
+  {
+    initials: 'EA',
+    name: 'Elena Aguilar',
+    roleTitle: 'Administradora Comercial',
+    email: 'elena@kapehtrace.mx',
+    role: 'ADMIN_COMERCIAL',
+    organization: 'Kapeh Chiapas Export S.A. de C.V.'
+  },
+  {
+    initials: 'MR',
+    name: 'Marco Ruiz',
+    roleTitle: 'Auditor de Calidad',
+    email: 'marco@kapehtrace.mx',
     role: 'AUDITOR_CALIDAD',
-    title: 'Auditor de Certificaciones',
-    name: 'Dra. Carmen Villafuerte',
-    organization: 'MayaCert / USDA Organic Compliance',
-    licenseNumber: 'AUD-2026-MX',
-    icon: ShieldCheck,
-    badgeColor: 'border-purple-500/30 text-purple-300 bg-purple-500/10',
-    description: 'Expedientes de pesticidas, inocuidad y análisis de impacto inverso ante contingencias.'
+    organization: 'MayaCert / Senasica Inocuidad'
   }
 ];
 
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
-  const [email, setEmail] = useState('qgrader@kapehtrace.com');
-  const [password, setPassword] = useState('kapeh2026');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedDemo, setSelectedDemo] = useState<DemoAccount>(DEMO_ACCOUNTS[1]);
+  const [activeProfileIndex, setActiveProfileIndex] = useState(0);
+  const currentProfile = DEMO_PROFILES[activeProfileIndex];
 
-  const handleSelectDemo = (account: DemoAccount) => {
-    setSelectedDemo(account);
-    setEmail(account.email);
+  const [email, setEmail] = useState(currentProfile.email);
+  const [password, setPassword] = useState('kapeh2026');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const handleSelectProfile = (index: number) => {
+    setActiveProfileIndex(index);
+    setEmail(DEMO_PROFILES[index].email);
     setPassword('kapeh2026');
-    setError(null);
+    setShowProfileMenu(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-
-    if (!email || !password) {
-      setError('Por favor ingresa tu correo electrónico y contraseña.');
-      return;
-    }
-
     setIsLoading(true);
 
-    // Simulación de autenticación conectada al contexto del backend KapehTrace
     setTimeout(() => {
       setIsLoading(false);
-      
-      const foundDemo = DEMO_ACCOUNTS.find(acc => acc.email.toLowerCase() === email.toLowerCase());
-      
-      const user: User = foundDemo ? {
-        id: `usr-${foundDemo.role.toLowerCase()}-1`,
-        name: foundDemo.name,
-        email: foundDemo.email,
-        role: foundDemo.role,
-        roleTitle: foundDemo.title,
-        licenseNumber: foundDemo.licenseNumber,
-        organization: foundDemo.organization
-      } : {
-        id: 'usr-custom-1',
-        name: email.split('@')[0].replace('.', ' ').toUpperCase(),
-        email: email,
-        role: 'ADMIN_COMERCIAL',
-        roleTitle: 'Operador de Sistema',
-        organization: 'Kapeh Chiapas Trace'
+      const found = DEMO_PROFILES.find(p => p.email.toLowerCase() === email.toLowerCase()) || currentProfile;
+
+      const user: User = {
+        id: `usr-${found.role.toLowerCase()}`,
+        name: found.name,
+        email: found.email,
+        role: found.role,
+        roleTitle: found.roleTitle,
+        organization: found.organization
       };
 
       onLoginSuccess(user);
-    }, 700);
+    }, 500);
   };
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden bg-[#0c100e]">
-      {/* Dynamic Background Elements */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-900/30 rounded-full blur-[120px]" />
-        <div className="absolute top-1/2 -right-40 w-96 h-96 bg-amber-800/20 rounded-full blur-[140px]" />
-        <div className="absolute -bottom-20 left-1/3 w-80 h-80 bg-teal-900/20 rounded-full blur-[100px]" />
+    <div className="min-h-screen w-full flex items-center justify-center p-3 sm:p-6 lg:p-10 bg-[#1c1511]">
+      
+      {/* Contenedor Principal */}
+      <div className="w-full max-w-5xl rounded-[28px] overflow-hidden shadow-2xl grid grid-cols-1 md:grid-cols-12 border border-stone-800/50 bg-[#FAF7F2]">
         
-        {/* Subtle decorative grid */}
-        <div 
-          className="absolute inset-0 opacity-[0.03]" 
-          style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)`,
-            backgroundSize: '32px 32px'
-          }}
-        />
-      </div>
+        {/* PANEL IZQUIERDO */}
+        <div className="md:col-span-5 relative bg-gradient-to-b from-[#2e1d15] via-[#241710] to-[#1a100b] p-8 sm:p-10 flex flex-col justify-between overflow-hidden text-white border-b md:border-b-0 md:border-r border-stone-900/40">
+          
+          {/* Siluetas de fondo */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <svg 
+              className="absolute -bottom-10 -right-20 w-[460px] h-[460px] opacity-25" 
+              viewBox="0 0 400 400" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M50 380 C120 220, 240 180, 420 380 Z" fill="#000000" />
+              <path d="M-50 400 C80 260, 200 240, 350 400 Z" fill="#0d0705" />
+              <circle cx="200" cy="190" r="140" fill="url(#sun-glow)" opacity="0.15" />
+              <defs>
+                <radialGradient id="sun-glow" cx="0.5" cy="0.5" r="0.5">
+                  <stop offset="0%" stopColor="#C07850" />
+                  <stop offset="100%" stopColor="#241710" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
 
-      <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-        
-        {/* Left Column: Branding, Context & Polyglot Architecture Badges */}
-        <div className="lg:col-span-5 flex flex-col justify-between rounded-3xl bg-gradient-to-br from-[#141d18]/90 via-[#101713]/90 to-[#0a0f0d]/90 border border-emerald-900/40 p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-black/60">
-          <div>
-            {/* Header Badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-700/40 text-emerald-300 text-xs font-semibold tracking-wide mb-6">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Universidad Politécnica de Chiapas • UPChiapas
+          {/* Logo Superior */}
+          <div className="relative z-10 flex items-center gap-2.5">
+            <div className="flex items-center gap-1 text-[#D79270]">
+              <svg width="22" height="26" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="transform -rotate-12">
+                <ellipse cx="8" cy="14" rx="6" ry="11" stroke="#D79270" strokeWidth="2" fill="none" />
+                <path d="M8 3 C7 9, 9 19, 8 25" stroke="#D79270" strokeWidth="1.5" strokeLinecap="round" />
+                <ellipse cx="16" cy="14" rx="6" ry="11" stroke="#D79270" strokeWidth="2" fill="none" />
+                <path d="M16 3 C15 9, 17 19, 16 25" stroke="#D79270" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
             </div>
-
-            {/* Brand Logo & Name */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-700 via-amber-600 to-emerald-600 flex items-center justify-center shadow-lg shadow-amber-900/30 border border-amber-400/20">
-                <Coffee className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-1.5">
-                  Kapeh<span className="text-amber-400">Trace</span>
-                </h1>
-                <p className="text-xs text-stone-400 font-medium">
-                  Tseltal <span className="italic text-emerald-400">"Kapeh"</span> (Café) + <span className="italic text-amber-400">Trace</span>
-                </p>
-              </div>
+            <div className="font-serif text-xl tracking-tight text-white font-medium">
+              Kapeh<span className="text-[#D79270]">Trace</span>
             </div>
+          </div>
 
-            <p className="text-stone-300 text-sm leading-relaxed mb-6">
-              Plataforma integral de trazabilidad, evaluación sensorial y cadena de custodia para cafés de especialidad de las regiones cafetaleras de Chiapas.
+          {/* Mensaje Central */}
+          <div className="relative z-10 my-16 sm:my-20">
+            <span className="text-[11px] font-sans font-semibold tracking-[0.2em] uppercase text-[#D79270] block mb-3">
+              DEL ORIGEN AL DESTINO
+            </span>
+            <h1 className="font-serif text-4xl sm:text-5xl leading-[1.1] text-white font-normal tracking-tight">
+              Cada grano tiene una historia.
+            </h1>
+            <p className="text-stone-300 text-xs sm:text-sm mt-5 leading-relaxed font-sans max-w-sm">
+              Trazabilidad, calidad y cadena de custodia para el café de especialidad de Chiapas.
             </p>
+          </div>
 
-            {/* Polyglot Database Trio Pills */}
-            <div className="space-y-2.5 pt-2 border-t border-emerald-900/30">
-              <span className="text-[11px] uppercase tracking-wider text-stone-400 font-bold block mb-2">
-                Persistencia Políglota Coordinada:
-              </span>
-              
-              <div className="flex items-center gap-3 p-2.5 rounded-xl bg-[#17221c]/70 border border-emerald-800/30 text-xs">
-                <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
-                  <Database className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <span className="font-semibold text-blue-300 block">PostgreSQL 16 (Relacional)</span>
-                  <span className="text-stone-400 text-[11px]">Inventario en sacos (69 kg), clientes y contratos</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-2.5 rounded-xl bg-[#17221c]/70 border border-emerald-800/30 text-xs">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-                  <FileText className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <span className="font-semibold text-emerald-300 block">MongoDB 7 (Documental)</span>
-                  <span className="text-stone-400 text-[11px]">Fichas SCA (10 atributos) y laboratorios microbiológicos</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-2.5 rounded-xl bg-[#17221c]/70 border border-emerald-800/30 text-xs">
-                <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
-                  <GitFork className="w-3.5 h-3.5" />
-                </div>
-                <div>
-                  <span className="font-semibold text-purple-300 block">Neo4j 5 (Grafos)</span>
-                  <span className="text-stone-400 text-[11px]">Red de linaje de mezclas y cuarentena en cascada</span>
-                </div>
-              </div>
+          {/* Tecnologías en el Pie */}
+          <div className="relative z-10 pt-4 border-t border-stone-800/40">
+            <div className="flex items-center gap-6 text-[10px] sm:text-[11px] font-mono tracking-[0.25em] uppercase text-stone-400">
+              <span>POSTGRESQL</span>
+              <span>MONGODB</span>
+              <span>NEO4J</span>
             </div>
           </div>
 
-          {/* Footer note */}
-          <div className="mt-8 pt-4 border-t border-emerald-950 flex items-center justify-between text-[11px] text-stone-400">
-            <span>Branch: <code className="text-emerald-400 font-mono">feature/frontend</code></span>
-            <span>API: <code className="text-amber-400 font-mono">:8000/docs</code></span>
-          </div>
         </div>
 
-        {/* Right Column: Interactive Login Form + Role Quick Switcher */}
-        <div className="lg:col-span-7 flex flex-col justify-between rounded-3xl bg-[#141b17]/95 border border-emerald-800/30 p-6 sm:p-8 backdrop-blur-xl shadow-2xl">
+        {/* PANEL DERECHO */}
+        <div className="md:col-span-7 bg-[#FAF7F2] p-8 sm:p-12 flex flex-col justify-between relative overflow-y-auto max-h-[90vh] md:max-h-[85vh]">
+          
           <div>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white tracking-tight">Acceso a la Plataforma</h2>
-              <p className="text-sm text-stone-400 mt-1">
-                Selecciona un rol de demostración o ingresa tus credenciales autorizadas.
+            {/* Encabezado */}
+            <div className="mb-8">
+              <span className="text-[11px] font-sans font-semibold tracking-[0.2em] uppercase text-[#C07850] block mb-1.5">
+                ACCESO SEGURO
+              </span>
+              <h2 className="font-serif text-3xl sm:text-4xl text-[#241710] font-normal tracking-tight">
+                Bienvenido de vuelta
+              </h2>
+              <p className="text-xs sm:text-sm text-[#73655B] mt-1.5 font-sans">
+                Ingresa tus credenciales para continuar.
               </p>
             </div>
 
-            {/* Quick Demo Role Selector */}
-            <div className="mb-6">
-              <label className="text-xs font-semibold uppercase tracking-wider text-stone-400 block mb-2.5">
-                Perfiles de Demostración (Acceso Rápido)
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {DEMO_ACCOUNTS.map((acc) => {
-                  const Icon = acc.icon;
-                  const isSelected = selectedDemo.role === acc.role;
-                  return (
-                    <button
-                      key={acc.role}
-                      type="button"
-                      onClick={() => handleSelectDemo(acc)}
-                      className={`text-left p-3 rounded-xl border transition-all duration-200 flex flex-col justify-between ${
-                        isSelected 
-                          ? 'bg-emerald-950/60 border-emerald-500 shadow-md shadow-emerald-950' 
-                          : 'bg-[#18231e]/50 border-emerald-900/40 hover:bg-[#18231e] hover:border-emerald-700/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <Icon className={`w-4 h-4 ${isSelected ? 'text-emerald-400' : 'text-stone-400'}`} />
-                          <span className="text-xs font-bold text-stone-200 truncate max-w-[140px]">{acc.name}</span>
-                        </div>
-                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />}
-                      </div>
-                      <span className="text-[11px] text-stone-400 truncate block">{acc.title}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Form */}
+            {/* Formulario */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="p-3 rounded-xl bg-red-950/60 border border-red-800/60 text-red-300 text-xs flex items-center gap-2 animate-fadeIn">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              {/* Email */}
+              
               <div>
-                <label className="block text-xs font-semibold text-stone-300 mb-1.5" htmlFor="email">
-                  Correo Electrónico Institucional
+                <label className="block text-xs font-semibold text-[#4B3D34] mb-1.5 font-sans">
+                  Correo electrónico
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-500">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    placeholder="usuario@kapehtrace.com"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#0e1411] border border-emerald-900/50 text-white placeholder-stone-600 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-colors"
-                  />
-                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="lucia@kapehtrace.mx"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#E5DDD5] text-sm text-[#241710] placeholder-stone-400 focus:outline-none focus:border-[#C07850] focus:ring-1 focus:ring-[#C07850] shadow-xs transition-colors"
+                />
               </div>
 
-              {/* Password */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-stone-300" htmlFor="password">
+                  <label className="block text-xs font-semibold text-[#4B3D34] font-sans">
                     Contraseña
                   </label>
-                  <a href="#forgot" onClick={(e) => { e.preventDefault(); alert('En el entorno de evaluación use las credenciales demo: kapeh2026'); }} className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">
+                  <a 
+                    href="#recuperar" 
+                    onClick={(e) => { e.preventDefault(); alert('En esta versión demostrativa puedes usar la contraseña: kapeh2026'); }}
+                    className="text-xs text-[#C07850] hover:underline font-sans"
+                  >
                     ¿Olvidaste tu contraseña?
                   </a>
                 </div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-500">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[#0e1411] border border-emerald-900/50 text-white placeholder-stone-600 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-stone-500 hover:text-stone-300 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••••"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#E5DDD5] text-sm text-[#241710] placeholder-stone-400 focus:outline-none focus:border-[#C07850] focus:ring-1 focus:ring-[#C07850] shadow-xs transition-colors"
+                />
               </div>
 
-              {/* Remember Me */}
-              <div className="flex items-center justify-between pt-1">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-stone-300 select-none">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-emerald-900 bg-[#0e1411] text-emerald-600 focus:ring-emerald-500/30 focus:ring-offset-0"
-                  />
-                  <span>Mantener sesión activa en esta estación</span>
-                </label>
-              </div>
-
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full mt-2 py-3 px-4 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-amber-600 hover:from-emerald-500 hover:to-amber-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
+                className="w-full mt-2 py-3 px-4 rounded-xl font-medium text-sm text-white bg-[#332017] hover:bg-[#23150e] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#332017]/15 disabled:opacity-50"
               >
                 {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                    <span>Autenticando usuario...</span>
-                  </>
+                  <span>Accediendo...</span>
                 ) : (
                   <>
-                    <span>Ingresar al Sistema KapehTrace</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                    <span>Iniciar sesión</span>
+                    <ArrowRight className="w-4 h-4 ml-0.5" />
                   </>
                 )}
               </button>
             </form>
+
+            {/* Separador */}
+            <div className="relative my-6 text-center">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[#E5DDD5]" />
+              </div>
+              <span className="relative bg-[#FAF7F2] px-3 text-[10px] sm:text-[11px] font-sans font-semibold tracking-[0.15em] uppercase text-[#9B8E85]">
+                O USA UN PERFIL DE DEMOSTRACIÓN
+              </span>
+            </div>
+
+            {/* Selector de Perfil Desplegable */}
+            <div>
+              
+              {/* Tarjeta Superior seleccionada */}
+              <div 
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="p-3 sm:p-3.5 rounded-2xl bg-white border border-[#E5DDD5] flex items-center justify-between hover:border-[#C07850] transition-colors cursor-pointer shadow-xs group select-none"
+              >
+                <div className="flex items-center gap-3">
+                  {/* Ícono de dos nodos conectados idéntico al diseño */}
+                  <div className="w-12 h-12 rounded-full bg-[#F2EDE4] flex items-center justify-center text-[#6F4E37] flex-shrink-0 text-sm">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6F4E37" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="6" cy="18" r="3" />
+                      <circle cx="18" cy="6" r="3" />
+                      <line x1="8.5" y1="15.5" x2="15.5" y2="8.5" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-[#241710] leading-tight">
+                      {currentProfile.name}
+                    </h4>
+                    <span className="text-xs text-[#73655B] font-sans">
+                      {currentProfile.roleTitle}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-[#523E33] group-hover:text-[#241710] pr-1">
+                  <ChevronDown className={`w-4 h-4 transform transition-transform duration-200 ${showProfileMenu ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+
+              {/* Lista Desplegable inline con scroll interno */}
+              {showProfileMenu && (
+                <div className="mt-2 bg-white rounded-2xl border border-[#E5DDD5] shadow-lg p-2 max-h-52 overflow-y-auto">
+                  <div className="space-y-1">
+                    {DEMO_PROFILES.map((p, idx) => {
+                      const isSelected = activeProfileIndex === idx;
+                      return (
+                        <div
+                          key={p.role}
+                          onClick={() => handleSelectProfile(idx)}
+                          className={`p-2.5 rounded-xl flex items-center gap-3 cursor-pointer transition-colors ${
+                            isSelected 
+                              ? 'bg-[#F2EDE4]' 
+                              : 'hover:bg-[#FAF7F2]'
+                          }`}
+                        >
+                          {/* Avatar oscuro con iniciales (LM, DL, EA, MR) */}
+                          <div className="w-9 h-9 rounded-full bg-[#3B261C] text-white flex items-center justify-center text-xs font-bold font-sans flex-shrink-0">
+                            {p.initials}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h5 className="font-bold text-sm text-[#241710] leading-tight truncate">
+                              {p.name}
+                            </h5>
+                            <span className="text-xs text-[#73655B] font-sans truncate block">
+                              {p.roleTitle}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+            </div>
+
           </div>
 
-          {/* Selected Role Context Banner */}
-          <div className="mt-6 p-3.5 rounded-2xl bg-[#0e1511] border border-emerald-900/30 flex items-start gap-3">
-            <div className={`p-2 rounded-xl ${selectedDemo.badgeColor} flex-shrink-0 mt-0.5`}>
-              <selectedDemo.icon className="w-4 h-4" />
-            </div>
-            <div className="text-xs">
-              <span className="font-semibold text-stone-200 block">{selectedDemo.title}</span>
-              <p className="text-stone-400 mt-0.5 text-[11px] leading-relaxed">
-                {selectedDemo.description}
-              </p>
-            </div>
+          {/* Nota al Pie */}
+          <div className="mt-8 text-center">
+            <p className="text-[11px] text-[#A3968C] font-sans">
+              Plataforma demostrativa · Los datos mostrados son ilustrativos
+            </p>
           </div>
+
+          {/* Botón flotante de ayuda en la esquina */}
+          <button 
+            type="button"
+            onClick={() => alert('KapehTrace: Sistema de Trazabilidad, Calidad y Cadena de Custodia para Café de Especialidad (UPChiapas).')}
+            className="absolute bottom-4 right-4 w-6 h-6 rounded-full bg-[#241710] text-white flex items-center justify-center text-xs font-bold hover:bg-[#332017] transition-colors cursor-pointer shadow-sm"
+            title="Ayuda del sistema"
+          >
+            ?
+          </button>
 
         </div>
 
       </div>
+
     </div>
   );
 };
-
