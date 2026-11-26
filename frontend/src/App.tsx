@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Login } from './components/Login';
+import { LuciaDashboard } from './components/lucia/LuciaDashboard';
 import { User, AuthState } from './types/auth';
 
 export default function App() {
@@ -30,7 +31,12 @@ export default function App() {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // Después del login — placeholder para las vistas futuras
+  // Vista principal para Lucía Méndez (Jefa de Trazabilidad)
+  if (auth.user.role === 'JEFE_LOGISTICA') {
+    return <LuciaDashboard user={auth.user} onLogout={handleLogout} />;
+  }
+
+  // Placeholder para los demás roles hasta recibir sus bocetos
   return (
     <div className="min-h-screen bg-[#FDFBF7] text-[#26170D] antialiased flex items-center justify-center font-sans">
       <div className="text-center space-y-4">
