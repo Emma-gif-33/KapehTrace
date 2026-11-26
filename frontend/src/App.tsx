@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Login } from './components/Login';
 import { LuciaDashboard } from './components/lucia/LuciaDashboard';
 import { DanielDashboard } from './components/daniel/DanielDashboard';
+import { ElenaDashboard } from './components/elena/ElenaDashboard';
 import { User, AuthState } from './types/auth';
 
 export default function App() {
@@ -40,6 +41,11 @@ export default function App() {
   // Vista principal para Daniel López (Catador Q-Grader)
   if (auth.user.role === 'Q_GRADER') {
     return <DanielDashboard user={auth.user} onLogout={handleLogout} />;
+  }
+
+  // Vista principal para Elena Aguilar (Administradora Comercial)
+  if (auth.user.role === 'ADMIN_COMERCIAL') {
+    return <ElenaDashboard user={auth.user} onLogout={handleLogout} />;
   }
 
   // Placeholder para los demás roles hasta recibir sus bocetos
