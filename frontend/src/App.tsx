@@ -3,6 +3,7 @@ import { Login } from './components/Login';
 import { LuciaDashboard } from './components/lucia/LuciaDashboard';
 import { DanielDashboard } from './components/daniel/DanielDashboard';
 import { ElenaDashboard } from './components/elena/ElenaDashboard';
+import { MarcoDashboard } from './components/marco/MarcoDashboard';
 import { User, AuthState } from './types/auth';
 
 export default function App() {
@@ -46,6 +47,11 @@ export default function App() {
   // Vista principal para Elena Aguilar (Administradora Comercial)
   if (auth.user.role === 'ADMIN_COMERCIAL') {
     return <ElenaDashboard user={auth.user} onLogout={handleLogout} />;
+  }
+
+  // Vista principal para Marco Ruiz (Auditor de Calidad)
+  if (auth.user.role === 'AUDITOR_CALIDAD') {
+    return <MarcoDashboard user={auth.user} onLogout={handleLogout} />;
   }
 
   // Placeholder para los demás roles hasta recibir sus bocetos
