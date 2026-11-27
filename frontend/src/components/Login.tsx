@@ -17,36 +17,36 @@ interface DemoProfile {
 
 const DEMO_PROFILES: DemoProfile[] = [
   {
-    initials: 'LM',
-    name: 'Lucía Méndez',
-    roleTitle: 'Jefa de Trazabilidad',
-    email: 'lucia@kapehtrace.mx',
+    initials: 'JT',
+    name: 'Jefe de Trazabilidad',
+    roleTitle: 'Registro de lotes, mezclas y linaje',
+    email: 'trazabilidad@kapehtrace.mx',
     role: 'JEFE_LOGISTICA',
     organization: 'Red de Beneficios Comunitarios Los Altos'
   },
   {
-    initials: 'DL',
-    name: 'Daniel López',
-    roleTitle: 'Catador Q-Grader',
-    email: 'daniel@kapehtrace.mx',
+    initials: 'QG',
+    name: 'Catador Q-Grader',
+    roleTitle: 'Evaluación sensorial SCA y calidad',
+    email: 'catador@kapehtrace.mx',
     role: 'Q_GRADER',
-    organization: 'Laboratorio de Catación San Cristóbal'
+    organization: 'Laboratorio de Catación Chiapas'
   },
   {
-    initials: 'EA',
-    name: 'Elena Aguilar',
-    roleTitle: 'Administradora Comercial',
-    email: 'elena@kapehtrace.mx',
+    initials: 'AC',
+    name: 'Administradora Comercial',
+    roleTitle: 'Inventario, contratos y pasaporte',
+    email: 'comercial@kapehtrace.mx',
     role: 'ADMIN_COMERCIAL',
     organization: 'Kapeh Chiapas Export S.A. de C.V.'
   },
   {
-    initials: 'MR',
-    name: 'Marco Ruiz',
-    roleTitle: 'Auditor de Calidad',
-    email: 'marco@kapehtrace.mx',
+    initials: 'AU',
+    name: 'Auditor de Calidad',
+    roleTitle: 'Inocuidad, LMR y cuarentena en cascada',
+    email: 'auditor@kapehtrace.mx',
     role: 'AUDITOR_CALIDAD',
-    organization: 'MayaCert / Senasica Inocuidad'
+    organization: 'SENASICA / Certificación Orgánica'
   }
 ];
 
@@ -184,7 +184,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="lucia@kapehtrace.mx"
+                  placeholder="trazabilidad@kapehtrace.mx"
                   className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#E5DDD5] text-sm text-[#241710] placeholder-stone-400 focus:outline-none focus:border-[#C07850] focus:ring-1 focus:ring-[#C07850] shadow-xs transition-colors"
                 />
               </div>
