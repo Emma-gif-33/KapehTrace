@@ -4,12 +4,12 @@ import { HealthStatus, Lote, PasaporteDigital } from '../../types/lotes';
 import { obtenerPasaporte } from '../../services/api';
 import { DatabaseStatusBadge } from '../shared/DatabaseStatusBadge';
 
-interface MarcoCertificacionesViewProps {
+interface AuditorCertificacionesViewProps {
   lotes: Lote[];
   health: HealthStatus | null;
 }
 
-export const MarcoCertificacionesView: React.FC<MarcoCertificacionesViewProps> = ({
+export const AuditorCertificacionesView: React.FC<AuditorCertificacionesViewProps> = ({
   lotes,
   health
 }) => {

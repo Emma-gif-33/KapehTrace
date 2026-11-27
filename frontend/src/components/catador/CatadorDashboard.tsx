@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   LayoutGrid,
+  FlaskConical,
   ShieldCheck,
-  FileText,
-  AlertTriangle,
+  TrendingUp,
+  Leaf,
   Bell,
   ArrowRight,
   Menu,
@@ -13,27 +14,23 @@ import { User } from '../../types/auth';
 import { HealthStatus, Lote } from '../../types/lotes';
 import { checkHealth, fetchLotes } from '../../services/api';
 import { DatabaseStatusBadge } from '../shared/DatabaseStatusBadge';
-import { MarcoAuditoriaView } from './MarcoAuditoriaView';
-import { MarcoCertificacionesView } from './MarcoCertificacionesView';
+import {
+  CalidadCatacionView,
+  PasaporteSensorialView
+} from './CatadorModules';
 
-export type MarcoSection =
+export type CatadorSection =
   | 'resumen'
-  | 'auditoria'
-  | 'certificaciones';
+  | 'calidad'
+  | 'dictamenes';
 
-interface MarcoDashboardProps {
+interface CatadorDashboardProps {
   user: User;
   onLogout: () => void;
 }
 
-const HEADER_TITLES: Record<MarcoSection, string> = {
-  resumen: 'La seguridad del café, bajo vigilancia.',
-  auditoria: 'Auditoría e inocuidad',
-  certificaciones: 'Certificaciones y laboratorio'
-};
-
-export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }) => {
-  const [activeSection, setActiveSection] = useState<MarcoSection>('resumen');
+export const CatadorDashboard: React.FC<CatadorDashboardProps> = ({ user, onLogout }) => {
+  const [activeSection, setActiveSection] = useState<CatadorSection>('resumen');
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [lotes, setLotes] = useState<Lote[]>([]);
@@ -49,19 +46,27 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
     loadData();
   }, [loadData]);
 
-  const enCuarentena = lotes.filter((l) => l.estado === 'EN_CUARENTENA');
-  const disponibles = lotes.filter((l) => l.estado === 'DISPONIBLE');
-
-  const navItems: { id: MarcoSection; label: string; icon: React.ReactNode; hasAlert?: boolean }[] = [
+  const navItems: { id: CatadorSection; label: string; icon: React.ReactNode }[] = [
     { id: 'resumen', label: 'Resumen', icon: <LayoutGrid className="w-4 h-4" /> },
-    { id: 'auditoria', label: 'Auditoría y cuarentena', icon: <ShieldCheck className="w-4 h-4" />, hasAlert: enCuarentena.length > 0 },
-    { id: 'certificaciones', label: 'Certificaciones y lab', icon: <FileText className="w-4 h-4" /> }
+    { id: 'calidad', label: 'Calidad y catación', icon: <FlaskConical className="w-4 h-4" /> },
+    { id: 'dictamenes', label: 'Dictámenes y pasaporte', icon: <ShieldCheck className="w-4 h-4" /> }
   ];
 
-  const handleNavigate = (section: MarcoSection) => {
+  const handleNavigate = (section: CatadorSection) => {
     setActiveSection(section);
     setMobileMenuOpen(false);
   };
+
+  const evaluados = lotes.filter((l) => l.score_calidad_sca !== null);
+  const pendientes = lotes.length - evaluados.length;
+  const promedioSca =
+    evaluados.length > 0
+      ? (evaluados.reduce((acc, l) => acc + (l.score_calidad_sca || 0), 0) / evaluados.length).toFixed(1)
+      : '0.0';
+  const especialidadPct =
+    evaluados.length > 0
+      ? Math.round((evaluados.filter((l) => (l.score_calidad_sca || 0) >= 85).length / evaluados.length) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#241710] flex flex-col lg:flex-row font-sans">
@@ -131,21 +136,16 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
                     key={item.id}
                     type="button"
                     onClick={() => handleNavigate(item.id)}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13px] transition-colors cursor-pointer text-left ${
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] transition-colors cursor-pointer text-left ${
                       isActive
                         ? 'bg-[#EFE9E0] text-[#241710] font-semibold'
                         : 'text-[#6D5F55] hover:bg-[#F5F0E8] hover:text-[#241710] font-medium'
                     }`}
                   >
-                    <span className="flex items-center gap-3">
-                      <span className={isActive ? 'text-[#5A3E2E]' : 'text-[#8C7D72]'}>
-                        {item.icon}
-                      </span>
-                      <span>{item.label}</span>
+                    <span className={isActive ? 'text-[#5A3E2E]' : 'text-[#8C7D72]'}>
+                      {item.icon}
                     </span>
-                    {item.hasAlert && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#B85645]" />
-                    )}
+                    <span>{item.label}</span>
                   </button>
                 );
               })}
@@ -162,7 +162,7 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-9 h-9 rounded-full bg-[#332017] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                AU
+                QG
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-[#241710] truncate">{user.name}</p>
@@ -190,7 +190,7 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
                 KAPEHTRACE
               </span>
               <p className="font-serif text-base sm:text-lg text-[#241710] leading-tight">
-                {HEADER_TITLES[activeSection]}
+                La calidad de cada taza, documentada.
               </p>
             </div>
           </div>
@@ -203,14 +203,14 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
               aria-label="Notificaciones"
             >
               <Bell className="w-4 h-4" />
-              <span className="w-2 h-2 rounded-full bg-[#B85645] absolute top-2.5 right-2.5" />
+              <span className="w-2 h-2 rounded-full bg-[#C07850] absolute top-2.5 right-2.5" />
             </button>
 
             {showNotifications && (
               <div className="absolute right-0 mt-2 w-72 bg-white border border-[#EAE2D8] rounded-2xl shadow-xl p-4 z-30">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A64B2A]">
-                    Vigilancia sanitaria
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#C07850]">
+                    Alertas de catación
                   </span>
                   <button
                     type="button"
@@ -220,12 +220,12 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
                     Cerrar
                   </button>
                 </div>
-                <div className="p-3 rounded-xl bg-[#FDF7F5] border border-[#EAD0CA] text-xs space-y-1">
+                <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#EAE2D8] text-xs space-y-1">
                   <p className="font-semibold text-[#241710]">
-                    {enCuarentena.length} lote(s) en cuarentena
+                    {evaluados.length} lotes con evaluación SCA
                   </p>
                   <p className="text-[#73655B]">
-                    {enCuarentena.map((l) => l.codigo_lote).join(', ') || 'Sin alertas activas'}
+                    {pendientes} lotes pendientes de ficha en MongoDB.
                   </p>
                 </div>
               </div>
@@ -242,10 +242,10 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
                     COSECHA 2024–2025
                   </span>
                   <h1 className="font-serif text-3xl sm:text-[42px] leading-[1.1] text-[#241710] font-normal tracking-tight">
-                    La seguridad del café, bajo vigilancia.
+                    La calidad de cada taza, documentada.
                   </h1>
                   <p className="text-sm text-[#73655B] mt-2.5">
-                    Expedientes químicos en MongoDB, impacto en Neo4j y cuarentenas en PostgreSQL.
+                    Evaluaciones SCA en MongoDB y replicación de puntaje en PostgreSQL.
                   </p>
                 </div>
 
@@ -255,47 +255,37 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {[
                   {
-                    label: 'Lotes registrados',
-                    value: String(lotes.length).padStart(2, '0'),
-                    icon: <FileText className="w-4 h-4 text-[#6F4E37]" />,
-                    target: 'certificaciones' as MarcoSection,
-                    critical: false
+                    label: 'Sin evaluar',
+                    value: String(pendientes).padStart(2, '0'),
+                    icon: <FlaskConical className="w-4 h-4 text-[#6F4E37]" />,
+                    target: 'calidad' as CatadorSection
                   },
                   {
-                    label: 'Lotes disponibles',
-                    value: String(disponibles.length).padStart(2, '0'),
-                    icon: <ShieldCheck className="w-4 h-4 text-[#6F4E37]" />,
-                    target: 'certificaciones' as MarcoSection,
-                    critical: false
+                    label: 'Lotes evaluados',
+                    value: String(evaluados.length).padStart(2, '0'),
+                    icon: <LayoutGrid className="w-4 h-4 text-[#6F4E37]" />,
+                    target: 'dictamenes' as CatadorSection
                   },
                   {
-                    label: 'Bases conectadas',
-                    value: health ? `${[health.databases.postgres, health.databases.mongodb, health.databases.neo4j].filter(Boolean).length}/3` : '0/3',
-                    icon: <ShieldCheck className="w-4 h-4 text-[#6F4E37]" />,
-                    target: 'auditoria' as MarcoSection,
-                    critical: false
+                    label: 'Promedio SCA',
+                    value: promedioSca,
+                    icon: <TrendingUp className="w-4 h-4 text-[#6F4E37]" />,
+                    target: 'dictamenes' as CatadorSection
                   },
                   {
-                    label: 'En cuarentena',
-                    value: String(enCuarentena.length).padStart(2, '0'),
-                    icon: <AlertTriangle className="w-4 h-4 text-[#A64B2A]" />,
-                    target: 'auditoria' as MarcoSection,
-                    critical: true
+                    label: 'Especialidad (≥85)',
+                    value: `${especialidadPct}%`,
+                    icon: <Leaf className="w-4 h-4 text-[#6F4E37]" />,
+                    target: 'dictamenes' as CatadorSection
                   }
                 ].map((kpi) => (
                   <button
                     key={kpi.label}
                     type="button"
                     onClick={() => handleNavigate(kpi.target)}
-                    className={`rounded-2xl p-6 text-left transition-all cursor-pointer shadow-[0_1px_2px_rgba(36,23,16,0.03)] border ${
-                      kpi.critical
-                        ? 'bg-[#FDF7F5] border-[#EAD0CA] hover:border-[#A64B2A]/60'
-                        : 'bg-white border-[#EAE2D8] hover:border-[#C07850]/70'
-                    }`}
+                    className="bg-white border border-[#EAE2D8] hover:border-[#C07850]/70 rounded-2xl p-6 text-left transition-all cursor-pointer shadow-[0_1px_2px_rgba(36,23,16,0.03)]"
                   >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-5 ${
-                      kpi.critical ? 'bg-[#F7E4DF]' : 'bg-[#F4EFE6]'
-                    }`}>
+                    <div className="w-10 h-10 rounded-xl bg-[#F4EFE6] flex items-center justify-center mb-5">
                       {kpi.icon}
                     </div>
                     <p className="text-xs text-[#73655B] font-medium">{kpi.label}</p>
@@ -316,21 +306,26 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
                       </h2>
                     </div>
                     <div className="w-11 h-11 rounded-full bg-[#F4EFE6] flex items-center justify-center text-[#6F4E37] flex-shrink-0">
-                      <ShieldCheck className="w-4 h-4" />
+                      <FlaskConical className="w-4 h-4" />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
                     {[
                       {
-                        title: 'Cuarentena en cascada',
-                        stat: `${enCuarentena.length} lotes bloqueados`,
-                        target: 'auditoria' as MarcoSection
+                        title: 'Fichas SCA',
+                        stat: `${evaluados.length} registradas`,
+                        target: 'calidad' as CatadorSection
                       },
                       {
-                        title: 'Expedientes MongoDB',
-                        stat: 'Consulta por pasaporte',
-                        target: 'certificaciones' as MarcoSection
+                        title: 'Catación',
+                        stat: '10 atributos SCA',
+                        target: 'calidad' as CatadorSection
+                      },
+                      {
+                        title: 'Pasaporte',
+                        stat: 'Consulta MongoDB',
+                        target: 'dictamenes' as CatadorSection
                       }
                     ].map((card) => (
                       <div
@@ -354,28 +349,28 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
                   </div>
                 </div>
 
-                <div className="lg:col-span-4 bg-[#FDF7F5] border border-[#EAD0CA] rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-[0_1px_2px_rgba(36,23,16,0.03)]">
+                <div className="lg:col-span-4 bg-white border border-[#EAE2D8] rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-[0_1px_2px_rgba(36,23,16,0.03)]">
                   <div>
-                    <div className="w-10 h-10 rounded-full bg-[#F7E4DF] flex items-center justify-center text-[#A64B2A] mb-5">
-                      <AlertTriangle className="w-4 h-4" />
+                    <div className="w-10 h-10 rounded-full bg-[#F4EFE6] flex items-center justify-center text-[#6F4E37] mb-5">
+                      <FlaskConical className="w-4 h-4" />
                     </div>
                     <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#9B8E85] block mb-1.5">
                       SIGUIENTE ACCIÓN
                     </span>
                     <h2 className="font-serif text-2xl text-[#241710] font-normal leading-snug">
-                      Protocolo de cuarentena
+                      Mesa de catación lista
                     </h2>
                     <p className="text-xs sm:text-[13px] text-[#73655B] mt-3 leading-relaxed">
-                      Ejecuta una alerta sanitaria para registrar el expediente en MongoDB y bloquear lotes relacionados en Neo4j y PostgreSQL.
+                      Captura los diez atributos sensoriales de cualquier lote y replícalos en PostgreSQL.
                     </p>
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => handleNavigate('auditoria')}
-                    className="mt-6 inline-flex items-center gap-1.5 text-xs font-bold text-[#9E6040] hover:text-[#241710] transition-colors cursor-pointer w-fit"
+                    onClick={() => handleNavigate('calidad')}
+                    className="mt-6 inline-flex items-center gap-1.5 text-xs font-bold text-[#241710] hover:text-[#9E6040] transition-colors cursor-pointer w-fit"
                   >
-                    <span>Revisar impacto y cuarentena</span>
+                    <span>Comenzar evaluación SCA</span>
                     <span aria-hidden="true">→</span>
                   </button>
                 </div>
@@ -383,12 +378,10 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
             </div>
           )}
 
-          {activeSection === 'auditoria' && (
-            <MarcoAuditoriaView lotes={lotes} health={health} onRefresh={loadData} />
+          {activeSection === 'calidad' && (
+            <CalidadCatacionView lotes={lotes} onRefresh={loadData} />
           )}
-          {activeSection === 'certificaciones' && (
-            <MarcoCertificacionesView lotes={lotes} health={health} />
-          )}
+          {activeSection === 'dictamenes' && <PasaporteSensorialView lotes={lotes} />}
         </main>
       </div>
     </div>

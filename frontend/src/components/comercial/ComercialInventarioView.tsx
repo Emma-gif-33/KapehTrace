@@ -7,12 +7,12 @@ import { DatabaseStatusBadge } from '../shared/DatabaseStatusBadge';
 const FILTROS = ['Todos', 'DISPONIBLE', 'LIQUIDADO', 'EN_CUARENTENA'] as const;
 type FiltroEstado = (typeof FILTROS)[number];
 
-interface ElenaInventarioViewProps {
+interface ComercialInventarioViewProps {
   lotes: Lote[];
   health: HealthStatus | null;
 }
 
-export const ElenaInventarioView: React.FC<ElenaInventarioViewProps> = ({ lotes, health }) => {
+export const ComercialInventarioView: React.FC<ComercialInventarioViewProps> = ({ lotes, health }) => {
   const [search, setSearch] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('Todos');
   const [selectedId, setSelectedId] = useState<number | null>(null);
