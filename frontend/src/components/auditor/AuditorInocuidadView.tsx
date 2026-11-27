@@ -4,13 +4,13 @@ import { AlertaCuarentenaResponse, HealthStatus, Lote } from '../../types/lotes'
 import { detonarCuarentena } from '../../services/api';
 import { DatabaseStatusBadge } from '../shared/DatabaseStatusBadge';
 
-interface MarcoAuditoriaViewProps {
+interface AuditorInocuidadViewProps {
   lotes: Lote[];
   health: HealthStatus | null;
   onRefresh: () => Promise<void>;
 }
 
-export const MarcoAuditoriaView: React.FC<MarcoAuditoriaViewProps> = ({
+export const AuditorInocuidadView: React.FC<AuditorInocuidadViewProps> = ({
   lotes,
   health,
   onRefresh

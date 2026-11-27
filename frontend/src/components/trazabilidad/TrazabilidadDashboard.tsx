@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   LayoutGrid,
+  Leaf,
   Box,
-  TrendingUp,
-  AlertTriangle,
   Bell,
   ArrowRight,
   Menu,
@@ -13,22 +12,41 @@ import { User } from '../../types/auth';
 import { HealthStatus, Lote } from '../../types/lotes';
 import { checkHealth, fetchLotes } from '../../services/api';
 import { DatabaseStatusBadge } from '../shared/DatabaseStatusBadge';
-import { ElenaInventarioView } from './ElenaInventarioView';
+import {
+  RecepcionCosechasView,
+  ProcesosMezclasView,
+  TrazabilidadView
+} from './TrazabilidadModules';
 
-export type ElenaSection = 'resumen' | 'inventario';
+export type TrazabilidadSection =
+  | 'resumen'
+  | 'recepcion'
+  | 'procesos'
+  | 'trazabilidad';
 
-interface ElenaDashboardProps {
+interface TrazabilidadDashboardProps {
   user: User;
   onLogout: () => void;
 }
 
-const HEADER_TITLES: Record<ElenaSection, string> = {
-  resumen: 'Inventario y compromisos, conciliados.',
-  inventario: 'Inventario de lotes'
-};
+const TwoNodesIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.9"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <circle cx="6" cy="18" r="2.7" />
+    <circle cx="18" cy="6" r="2.7" />
+    <line x1="8.2" y1="15.8" x2="15.8" y2="8.2" />
+  </svg>
+);
 
-export const ElenaDashboard: React.FC<ElenaDashboardProps> = ({ user, onLogout }) => {
-  const [activeSection, setActiveSection] = useState<ElenaSection>('resumen');
+export const TrazabilidadDashboard: React.FC<TrazabilidadDashboardProps> = ({ user, onLogout }) => {
+  const [activeSection, setActiveSection] = useState<TrazabilidadSection>('resumen');
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [lotes, setLotes] = useState<Lote[]>([]);
@@ -44,23 +62,22 @@ export const ElenaDashboard: React.FC<ElenaDashboardProps> = ({ user, onLogout }
     loadData();
   }, [loadData]);
 
-  const navItems: { id: ElenaSection; label: string; icon: React.ReactNode }[] = [
+  const navItems: { id: TrazabilidadSection; label: string; icon: React.ReactNode }[] = [
     { id: 'resumen', label: 'Resumen', icon: <LayoutGrid className="w-4 h-4" /> },
-    { id: 'inventario', label: 'Inventario y pasaporte', icon: <Box className="w-4 h-4" /> }
+    { id: 'recepcion', label: 'Recepción de lotes', icon: <Leaf className="w-4 h-4" /> },
+    { id: 'procesos', label: 'Mezclas de exportación', icon: <Box className="w-4 h-4" /> },
+    { id: 'trazabilidad', label: 'Trazabilidad y grafo', icon: <TwoNodesIcon className="w-4 h-4" /> }
   ];
 
-  const handleNavigate = (section: ElenaSection) => {
+  const handleNavigate = (section: TrazabilidadSection) => {
     setActiveSection(section);
     setMobileMenuOpen(false);
   };
 
-  const disponibles = lotes.filter((l) => l.estado === 'DISPONIBLE');
-  const sacosDisponibles = disponibles.reduce((acc, l) => acc + l.sacos_69kg, 0);
-  const valorInventario = Math.round(
-    disponibles.reduce((acc, l) => acc + l.peso_neto_kg * l.precio_base_kg_usd, 0) / 1000
-  );
-  const enCuarentena = lotes.filter((l) => l.estado === 'EN_CUARENTENA').length;
-  const liquidados = lotes.filter((l) => l.estado === 'LIQUIDADO').length;
+  const totalLotes = lotes.length;
+  const lotesPergamino = lotes.filter((l) => l.tipo_lote === 'PERGAMINO' || l.tipo_lote === 'CEREZA').length;
+  const lotesExportacion = lotes.filter((l) => l.tipo_lote === 'EXPORTACION').length;
+  const sacosTotales = lotes.reduce((acc, l) => acc + l.sacos_69kg, 0);
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#241710] flex flex-col lg:flex-row font-sans">
@@ -71,6 +88,7 @@ export const ElenaDashboard: React.FC<ElenaDashboardProps> = ({ user, onLogout }
         />
       )}
 
+      {/* SIDEBAR IZQUIERDO */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-40 w-[260px] bg-[#FCFBF9] border-r border-[#EAE2D8] flex flex-col justify-between transition-transform duration-200 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -147,6 +165,7 @@ export const ElenaDashboard: React.FC<ElenaDashboardProps> = ({ user, onLogout }
           </div>
         </div>
 
+        {/* Tarjeta inferior de perfil sin nombre personal */}
         <div className="p-4">
           <button
             type="button"
@@ -156,11 +175,15 @@ export const ElenaDashboard: React.FC<ElenaDashboardProps> = ({ user, onLogout }
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-9 h-9 rounded-full bg-[#332017] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                AC
+                JT
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-bold text-[#241710] truncate">{user.name}</p>
-                <p className="text-[11px] text-[#73655B] truncate">Cambiar de rol</p>
+                <p className="text-xs font-bold text-[#241710] truncate">
+                  {user.name}
+                </p>
+                <p className="text-[11px] text-[#73655B] truncate">
+                  Cambiar de rol
+                </p>
               </div>
             </div>
             <ArrowRight className="w-3.5 h-3.5 text-[#73655B] group-hover:text-[#241710] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
@@ -168,6 +191,7 @@ export const ElenaDashboard: React.FC<ElenaDashboardProps> = ({ user, onLogout }
         </div>
       </aside>
 
+      {/* COLUMNA PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-[74px] bg-[#FCFBF9] border-b border-[#EAE2D8] px-5 sm:px-8 flex items-center justify-between relative z-20">
           <div className="flex items-center gap-3">
@@ -184,7 +208,7 @@ export const ElenaDashboard: React.FC<ElenaDashboardProps> = ({ user, onLogout }
                 KAPEHTRACE
               </span>
               <p className="font-serif text-base sm:text-lg text-[#241710] leading-tight">
-                {HEADER_TITLES[activeSection]}
+                La cadena de custodia, sin rupturas.
               </p>
             </div>
           </div>
@@ -204,7 +228,7 @@ export const ElenaDashboard: React.FC<ElenaDashboardProps> = ({ user, onLogout }
               <div className="absolute right-0 mt-2 w-72 bg-white border border-[#EAE2D8] rounded-2xl shadow-xl p-4 z-30">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-[#C07850]">
-                    Resumen comercial
+                    Estado de sincronización
                   </span>
                   <button
                     type="button"
@@ -215,9 +239,9 @@ export const ElenaDashboard: React.FC<ElenaDashboardProps> = ({ user, onLogout }
                   </button>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#EAE2D8] text-xs space-y-1">
-                  <p className="font-semibold text-[#241710]">{sacosDisponibles} sacos disponibles</p>
+                  <p className="font-semibold text-[#241710]">{health?.architecture || 'Arquitectura Políglota'}</p>
                   <p className="text-[#73655B]">
-                    Consulta cada lote en Inventario para ver su contrato asociado en PostgreSQL.
+                    {lotes.length} lotes cargados desde PostgreSQL.
                   </p>
                 </div>
               </div>
@@ -234,10 +258,10 @@ export const ElenaDashboard: React.FC<ElenaDashboardProps> = ({ user, onLogout }
                     COSECHA 2024–2025
                   </span>
                   <h1 className="font-serif text-3xl sm:text-[42px] leading-[1.1] text-[#241710] font-normal tracking-tight">
-                    Inventario y compromisos, conciliados.
+                    La cadena de custodia, sin rupturas.
                   </h1>
                   <p className="text-sm text-[#73655B] mt-2.5">
-                    Stock disponible y contratos asociados consultados directamente en PostgreSQL.
+                    Recepciones, mezclas de exportación y linaje en PostgreSQL, MongoDB y Neo4j.
                   </p>
                 </div>
 
@@ -247,30 +271,34 @@ export const ElenaDashboard: React.FC<ElenaDashboardProps> = ({ user, onLogout }
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {[
                   {
-                    label: 'Sacos disponibles',
-                    value: String(sacosDisponibles),
-                    icon: <Box className="w-4 h-4 text-[#6F4E37]" />
+                    label: 'Total de lotes',
+                    value: String(totalLotes).padStart(2, '0'),
+                    icon: <Leaf className="w-4 h-4 text-[#6F4E37]" />,
+                    target: 'recepcion' as TrazabilidadSection
                   },
                   {
-                    label: 'Valor disponible',
-                    value: `$${valorInventario}K`,
-                    icon: <TrendingUp className="w-4 h-4 text-[#6F4E37]" />
+                    label: 'Pergamino / Cereza',
+                    value: String(lotesPergamino).padStart(2, '0'),
+                    icon: <Box className="w-4 h-4 text-[#6F4E37]" />,
+                    target: 'recepcion' as TrazabilidadSection
                   },
                   {
-                    label: 'Lotes liquidados',
-                    value: String(liquidados).padStart(2, '0'),
-                    icon: <Box className="w-4 h-4 text-[#6F4E37]" />
+                    label: 'Lotes exportación',
+                    value: String(lotesExportacion).padStart(2, '0'),
+                    icon: <TwoNodesIcon className="w-4 h-4 text-[#6F4E37]" />,
+                    target: 'procesos' as TrazabilidadSection
                   },
                   {
-                    label: 'En cuarentena',
-                    value: String(enCuarentena).padStart(2, '0'),
-                    icon: <AlertTriangle className="w-4 h-4 text-[#6F4E37]" />
+                    label: 'Sacos (69 kg)',
+                    value: String(sacosTotales),
+                    icon: <Box className="w-4 h-4 text-[#6F4E37]" />,
+                    target: 'trazabilidad' as TrazabilidadSection
                   }
                 ].map((kpi) => (
                   <button
                     key={kpi.label}
                     type="button"
-                    onClick={() => handleNavigate('inventario')}
+                    onClick={() => handleNavigate(kpi.target)}
                     className="bg-white border border-[#EAE2D8] hover:border-[#C07850]/70 rounded-2xl p-6 text-left transition-all cursor-pointer shadow-[0_1px_2px_rgba(36,23,16,0.03)]"
                   >
                     <div className="w-10 h-10 rounded-xl bg-[#F4EFE6] flex items-center justify-center mb-5">
@@ -282,33 +310,97 @@ export const ElenaDashboard: React.FC<ElenaDashboardProps> = ({ user, onLogout }
                 ))}
               </div>
 
-              <div className="bg-white border border-[#EAE2D8] rounded-2xl p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_1px_2px_rgba(36,23,16,0.03)]">
-                <div>
-                  <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#9B8E85] block mb-1.5">
-                    PASAPORTE DIGITAL COMERCIAL
-                  </span>
-                  <h2 className="font-serif text-2xl text-[#241710] font-normal">
-                    Consulta inventario, valor USD y contrato asociado por lote
-                  </h2>
-                  <p className="text-xs sm:text-sm text-[#73655B] mt-1.5">
-                    Haz clic en cualquier lote dentro del inventario para ver su pasaporte completo en PostgreSQL, MongoDB y Neo4j.
-                  </p>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+                <div className="lg:col-span-8 bg-white border border-[#EAE2D8] rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-[0_1px_2px_rgba(36,23,16,0.03)]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#9B8E85] block mb-1.5">
+                        ACTIVIDAD DE TU ROL
+                      </span>
+                      <h2 className="font-serif text-2xl text-[#241710] font-normal">
+                        Flujo principal
+                      </h2>
+                    </div>
+                    <div className="w-11 h-11 rounded-full bg-[#F4EFE6] flex items-center justify-center text-[#6F4E37] flex-shrink-0">
+                      <TwoNodesIcon className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+                    {[
+                      {
+                        title: 'Recepciones',
+                        stat: `${totalLotes} lotes en bodega`,
+                        target: 'recepcion' as TrazabilidadSection
+                      },
+                      {
+                        title: 'Mezclas',
+                        stat: `${lotesExportacion} blends activos`,
+                        target: 'procesos' as TrazabilidadSection
+                      },
+                      {
+                        title: 'Grafo Neo4j',
+                        stat: 'Linaje y origen',
+                        target: 'trazabilidad' as TrazabilidadSection
+                      }
+                    ].map((card) => (
+                      <div
+                        key={card.title}
+                        className="bg-[#FAF7F2] border border-[#EAE2D8] rounded-xl p-4 flex flex-col justify-between min-h-[112px]"
+                      >
+                        <div>
+                          <p className="text-xs text-[#73655B]">{card.title}</p>
+                          <p className="text-sm font-bold text-[#241710] mt-1">{card.stat}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleNavigate(card.target)}
+                          className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-[#9E6040] hover:text-[#241710] transition-colors cursor-pointer w-fit"
+                        >
+                          <span>Abrir módulo</span>
+                          <span aria-hidden="true">→</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleNavigate('inventario')}
-                  className="px-5 py-2.5 rounded-xl bg-[#332017] hover:bg-[#23150e] text-white text-xs font-semibold transition-colors cursor-pointer flex-shrink-0"
-                >
-                  Abrir inventario →
-                </button>
+                <div className="lg:col-span-4 bg-white border border-[#EAE2D8] rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-[0_1px_2px_rgba(36,23,16,0.03)]">
+                  <div>
+                    <div className="w-10 h-10 rounded-full bg-[#F4EFE6] flex items-center justify-center text-[#6F4E37] mb-5">
+                      <TwoNodesIcon className="w-4 h-4" />
+                    </div>
+                    <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#9B8E85] block mb-1.5">
+                      SIGUIENTE ACCIÓN
+                    </span>
+                    <h2 className="font-serif text-2xl text-[#241710] font-normal leading-snug">
+                      Consolidar mezcla de exportación
+                    </h2>
+                    <p className="text-xs sm:text-[13px] text-[#73655B] mt-3 leading-relaxed">
+                      Combina lotes pergamino verificados para generar un nuevo lote de exportación en PostgreSQL y Neo4j.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate('procesos')}
+                    className="mt-6 inline-flex items-center gap-1.5 text-xs font-bold text-[#241710] hover:text-[#9E6040] transition-colors cursor-pointer w-fit"
+                  >
+                    <span>Ir a mezclas de exportación</span>
+                    <span aria-hidden="true">→</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
-          {activeSection === 'inventario' && (
-            <ElenaInventarioView lotes={lotes} health={health} />
+          {activeSection === 'recepcion' && (
+            <RecepcionCosechasView lotes={lotes} onRefresh={loadData} />
           )}
+          {activeSection === 'procesos' && (
+            <ProcesosMezclasView lotes={lotes} onRefresh={loadData} />
+          )}
+          {activeSection === 'trazabilidad' && <TrazabilidadView lotes={lotes} />}
         </main>
       </div>
     </div>
