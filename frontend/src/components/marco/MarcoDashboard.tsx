@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   LayoutGrid,
   ShieldCheck,
-  FlaskConical,
   FileText,
   AlertTriangle,
   Bell,
@@ -11,14 +10,15 @@ import {
   X
 } from 'lucide-react';
 import { User } from '../../types/auth';
+import { HealthStatus, Lote } from '../../types/lotes';
+import { checkHealth, fetchLotes } from '../../services/api';
+import { DatabaseStatusBadge } from '../shared/DatabaseStatusBadge';
 import { MarcoAuditoriaView } from './MarcoAuditoriaView';
-import { MarcoExpedientesView } from './MarcoExpedientesView';
 import { MarcoCertificacionesView } from './MarcoCertificacionesView';
 
 export type MarcoSection =
   | 'resumen'
   | 'auditoria'
-  | 'expedientes'
   | 'certificaciones';
 
 interface MarcoDashboardProps {
@@ -29,28 +29,34 @@ interface MarcoDashboardProps {
 const HEADER_TITLES: Record<MarcoSection, string> = {
   resumen: 'La seguridad del café, bajo vigilancia.',
   auditoria: 'Auditoría e inocuidad',
-  expedientes: 'Expedientes químicos',
-  certificaciones: 'Certificaciones'
+  certificaciones: 'Certificaciones y laboratorio'
 };
 
 export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }) => {
   const [activeSection, setActiveSection] = useState<MarcoSection>('resumen');
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [lotes, setLotes] = useState<Lote[]>([]);
+  const [health, setHealth] = useState<HealthStatus | null>(null);
+
+  const loadData = useCallback(async () => {
+    const [healthData, lotesData] = await Promise.all([checkHealth(), fetchLotes()]);
+    setHealth(healthData);
+    setLotes(lotesData.lotes);
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const enCuarentena = lotes.filter((l) => l.estado === 'EN_CUARENTENA');
+  const disponibles = lotes.filter((l) => l.estado === 'DISPONIBLE');
 
   const navItems: { id: MarcoSection; label: string; icon: React.ReactNode; hasAlert?: boolean }[] = [
     { id: 'resumen', label: 'Resumen', icon: <LayoutGrid className="w-4 h-4" /> },
-    { id: 'auditoria', label: 'Auditoría', icon: <ShieldCheck className="w-4 h-4" />, hasAlert: true },
-    { id: 'expedientes', label: 'Expedientes químicos', icon: <FlaskConical className="w-4 h-4" /> },
-    { id: 'certificaciones', label: 'Certificaciones', icon: <FileText className="w-4 h-4" /> }
+    { id: 'auditoria', label: 'Auditoría y cuarentena', icon: <ShieldCheck className="w-4 h-4" />, hasAlert: enCuarentena.length > 0 },
+    { id: 'certificaciones', label: 'Certificaciones y lab', icon: <FileText className="w-4 h-4" /> }
   ];
-
-  const initials = user.name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
 
   const handleNavigate = (section: MarcoSection) => {
     setActiveSection(section);
@@ -59,7 +65,6 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#241710] flex flex-col lg:flex-row font-sans">
-      {/* Overlay móvil */}
       {mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
@@ -67,14 +72,12 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
         />
       )}
 
-      {/* SIDEBAR IZQUIERDO */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-40 w-[260px] bg-[#FCFBF9] border-r border-[#EAE2D8] flex flex-col justify-between transition-transform duration-200 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         <div>
-          {/* Logo superior */}
           <div className="px-6 pt-6 pb-5 border-b border-[#F2EDE4] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <svg
@@ -110,14 +113,13 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
             </button>
           </div>
 
-          {/* Espacio de trabajo y navegación */}
           <div className="px-4 pt-6">
             <div className="px-2 mb-4">
               <span className="block text-[10px] font-semibold tracking-[0.18em] uppercase text-[#9B8E85]">
                 ESPACIO DE TRABAJO
               </span>
               <span className="block text-xs text-[#73655B] mt-0.5">
-                {user.roleTitle}
+                {user.name}
               </span>
             </div>
 
@@ -151,7 +153,6 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
           </div>
         </div>
 
-        {/* Tarjeta inferior de perfil / cerrar sesión */}
         <div className="p-4">
           <button
             type="button"
@@ -161,15 +162,11 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-9 h-9 rounded-full bg-[#332017] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                {initials}
+                AU
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-bold text-[#241710] truncate">
-                  {user.name}
-                </p>
-                <p className="text-[11px] text-[#73655B] truncate">
-                  {user.roleTitle}
-                </p>
+                <p className="text-xs font-bold text-[#241710] truncate">{user.name}</p>
+                <p className="text-[11px] text-[#73655B] truncate">Cambiar de rol</p>
               </div>
             </div>
             <ArrowRight className="w-3.5 h-3.5 text-[#73655B] group-hover:text-[#241710] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
@@ -177,9 +174,7 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
         </div>
       </aside>
 
-      {/* COLUMNA PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* HEADER SUPERIOR */}
         <header className="h-[74px] bg-[#FCFBF9] border-b border-[#EAE2D8] px-5 sm:px-8 flex items-center justify-between relative z-20">
           <div className="flex items-center gap-3">
             <button
@@ -215,7 +210,7 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
               <div className="absolute right-0 mt-2 w-72 bg-white border border-[#EAE2D8] rounded-2xl shadow-xl p-4 z-30">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A64B2A]">
-                    Alerta sanitaria crítica
+                    Vigilancia sanitaria
                   </span>
                   <button
                     type="button"
@@ -226,9 +221,11 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
                   </button>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FDF7F5] border border-[#EAD0CA] text-xs space-y-1">
-                  <p className="font-semibold text-[#241710]">Lote CHS-24-0761 no conforme</p>
+                  <p className="font-semibold text-[#241710]">
+                    {enCuarentena.length} lote(s) en cuarentena
+                  </p>
                   <p className="text-[#73655B]">
-                    Excede el umbral de Ocratoxina A (6.2 µg/kg vs 5.0 µg/kg).
+                    {enCuarentena.map((l) => l.codigo_lote).join(', ') || 'Sin alertas activas'}
                   </p>
                 </div>
               </div>
@@ -236,11 +233,9 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
           </div>
         </header>
 
-        {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1 p-5 sm:p-8 lg:p-10 max-w-[1320px] w-full mx-auto">
           {activeSection === 'resumen' && (
             <div className="space-y-7">
-              {/* Encabezado de cosecha */}
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
                   <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#C07850] block mb-2">
@@ -250,43 +245,39 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
                     La seguridad del café, bajo vigilancia.
                   </h1>
                   <p className="text-sm text-[#73655B] mt-2.5">
-                    Expedientes químicos, límites de residuos y cuarentenas coordinadas.
+                    Expedientes químicos en MongoDB, impacto en Neo4j y cuarentenas en PostgreSQL.
                   </p>
                 </div>
 
-                <div className="inline-flex items-center gap-2 text-xs text-[#6D5F55] pb-1">
-                  <span className="w-2 h-2 rounded-full bg-[#4B7A58]" />
-                  <span>Sistemas operativos</span>
-                </div>
+                <DatabaseStatusBadge health={health} />
               </div>
 
-              {/* 4 Tarjetas KPI */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {[
                   {
-                    label: 'Análisis pendientes',
-                    value: '06',
-                    icon: <FlaskConical className="w-4 h-4 text-[#6F4E37]" />,
-                    target: 'expedientes' as MarcoSection,
-                    critical: false
-                  },
-                  {
-                    label: 'Certificados vigentes',
-                    value: '42',
-                    icon: <ShieldCheck className="w-4 h-4 text-[#6F4E37]" />,
-                    target: 'certificaciones' as MarcoSection,
-                    critical: false
-                  },
-                  {
-                    label: 'Por renovar',
-                    value: '05',
+                    label: 'Lotes registrados',
+                    value: String(lotes.length).padStart(2, '0'),
                     icon: <FileText className="w-4 h-4 text-[#6F4E37]" />,
                     target: 'certificaciones' as MarcoSection,
                     critical: false
                   },
                   {
-                    label: 'Alertas críticas',
-                    value: '01',
+                    label: 'Lotes disponibles',
+                    value: String(disponibles.length).padStart(2, '0'),
+                    icon: <ShieldCheck className="w-4 h-4 text-[#6F4E37]" />,
+                    target: 'certificaciones' as MarcoSection,
+                    critical: false
+                  },
+                  {
+                    label: 'Bases conectadas',
+                    value: health ? `${[health.databases.postgres, health.databases.mongodb, health.databases.neo4j].filter(Boolean).length}/3` : '0/3',
+                    icon: <ShieldCheck className="w-4 h-4 text-[#6F4E37]" />,
+                    target: 'auditoria' as MarcoSection,
+                    critical: false
+                  },
+                  {
+                    label: 'En cuarentena',
+                    value: String(enCuarentena.length).padStart(2, '0'),
                     icon: <AlertTriangle className="w-4 h-4 text-[#A64B2A]" />,
                     target: 'auditoria' as MarcoSection,
                     critical: true
@@ -307,19 +298,13 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
                     }`}>
                       {kpi.icon}
                     </div>
-                    <p className="text-xs text-[#73655B] font-medium">
-                      {kpi.label}
-                    </p>
-                    <p className="font-serif text-4xl text-[#241710] mt-1 tracking-tight">
-                      {kpi.value}
-                    </p>
+                    <p className="text-xs text-[#73655B] font-medium">{kpi.label}</p>
+                    <p className="font-serif text-4xl text-[#241710] mt-1 tracking-tight">{kpi.value}</p>
                   </button>
                 ))}
               </div>
 
-              {/* Fila inferior: Actividad de tu rol + Siguiente acción */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-                {/* Flujo principal */}
                 <div className="lg:col-span-8 bg-white border border-[#EAE2D8] rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-[0_1px_2px_rgba(36,23,16,0.03)]">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -335,22 +320,17 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                     {[
                       {
-                        title: 'Laboratorios',
-                        stat: '6 revisados',
-                        target: 'expedientes' as MarcoSection
-                      },
-                      {
-                        title: 'LMR',
-                        stat: '24 comparados',
-                        target: 'expedientes' as MarcoSection
-                      },
-                      {
-                        title: 'Cuarentenas',
-                        stat: '1 activa',
+                        title: 'Cuarentena en cascada',
+                        stat: `${enCuarentena.length} lotes bloqueados`,
                         target: 'auditoria' as MarcoSection
+                      },
+                      {
+                        title: 'Expedientes MongoDB',
+                        stat: 'Consulta por pasaporte',
+                        target: 'certificaciones' as MarcoSection
                       }
                     ].map((card) => (
                       <div
@@ -359,9 +339,7 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
                       >
                         <div>
                           <p className="text-xs text-[#73655B]">{card.title}</p>
-                          <p className="text-sm font-bold text-[#241710] mt-1">
-                            {card.stat}
-                          </p>
+                          <p className="text-sm font-bold text-[#241710] mt-1">{card.stat}</p>
                         </div>
                         <button
                           type="button"
@@ -376,7 +354,6 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
                   </div>
                 </div>
 
-                {/* Siguiente acción */}
                 <div className="lg:col-span-4 bg-[#FDF7F5] border border-[#EAD0CA] rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-[0_1px_2px_rgba(36,23,16,0.03)]">
                   <div>
                     <div className="w-10 h-10 rounded-full bg-[#F7E4DF] flex items-center justify-center text-[#A64B2A] mb-5">
@@ -386,10 +363,10 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
                       SIGUIENTE ACCIÓN
                     </span>
                     <h2 className="font-serif text-2xl text-[#241710] font-normal leading-snug">
-                      Resultado no conforme
+                      Protocolo de cuarentena
                     </h2>
                     <p className="text-xs sm:text-[13px] text-[#73655B] mt-3 leading-relaxed">
-                      El lote CHS-24-0761 excede el umbral de Ocratoxina A y requiere acción inmediata.
+                      Ejecuta una alerta sanitaria para registrar el expediente en MongoDB y bloquear lotes relacionados en Neo4j y PostgreSQL.
                     </p>
                   </div>
 
@@ -406,9 +383,12 @@ export const MarcoDashboard: React.FC<MarcoDashboardProps> = ({ user, onLogout }
             </div>
           )}
 
-          {activeSection === 'auditoria' && <MarcoAuditoriaView />}
-          {activeSection === 'expedientes' && <MarcoExpedientesView />}
-          {activeSection === 'certificaciones' && <MarcoCertificacionesView />}
+          {activeSection === 'auditoria' && (
+            <MarcoAuditoriaView lotes={lotes} health={health} onRefresh={loadData} />
+          )}
+          {activeSection === 'certificaciones' && (
+            <MarcoCertificacionesView lotes={lotes} health={health} />
+          )}
         </main>
       </div>
     </div>
