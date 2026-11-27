@@ -143,16 +143,6 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               Trazabilidad, calidad y cadena de custodia para el café de especialidad de Chiapas.
             </p>
           </div>
-
-          {/* Tecnologías en el Pie */}
-          <div className="relative z-10 pt-4 border-t border-stone-800/40">
-            <div className="flex items-center gap-6 text-[10px] sm:text-[11px] font-mono tracking-[0.25em] uppercase text-stone-400">
-              <span>POSTGRESQL</span>
-              <span>MONGODB</span>
-              <span>NEO4J</span>
-            </div>
-          </div>
-
         </div>
 
         {/* PANEL DERECHO */}
