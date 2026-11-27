@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   LayoutGrid,
   FlaskConical,
-  Box,
   ShieldCheck,
   TrendingUp,
   Leaf,
@@ -12,16 +11,17 @@ import {
   X
 } from 'lucide-react';
 import { User } from '../../types/auth';
+import { HealthStatus, Lote } from '../../types/lotes';
+import { checkHealth, fetchLotes } from '../../services/api';
+import { DatabaseStatusBadge } from '../shared/DatabaseStatusBadge';
 import {
   CalidadCatacionView,
-  ParametrosFisicosView,
-  DictamenesSensorialesView
+  PasaporteSensorialView
 } from './DanielModules';
 
 export type DanielSection =
   | 'resumen'
   | 'calidad'
-  | 'fisicos'
   | 'dictamenes';
 
 interface DanielDashboardProps {
@@ -33,29 +33,43 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
   const [activeSection, setActiveSection] = useState<DanielSection>('resumen');
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [lotes, setLotes] = useState<Lote[]>([]);
+  const [health, setHealth] = useState<HealthStatus | null>(null);
+
+  const loadData = useCallback(async () => {
+    const [healthData, lotesData] = await Promise.all([checkHealth(), fetchLotes()]);
+    setHealth(healthData);
+    setLotes(lotesData.lotes);
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const navItems: { id: DanielSection; label: string; icon: React.ReactNode }[] = [
     { id: 'resumen', label: 'Resumen', icon: <LayoutGrid className="w-4 h-4" /> },
     { id: 'calidad', label: 'Calidad y catación', icon: <FlaskConical className="w-4 h-4" /> },
-    { id: 'fisicos', label: 'Parámetros físicos', icon: <Box className="w-4 h-4" /> },
-    { id: 'dictamenes', label: 'Dictámenes sensoriales', icon: <ShieldCheck className="w-4 h-4" /> }
+    { id: 'dictamenes', label: 'Dictámenes y pasaporte', icon: <ShieldCheck className="w-4 h-4" /> }
   ];
-
-  const initials = user.name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
 
   const handleNavigate = (section: DanielSection) => {
     setActiveSection(section);
     setMobileMenuOpen(false);
   };
 
+  const evaluados = lotes.filter((l) => l.score_calidad_sca !== null);
+  const pendientes = lotes.length - evaluados.length;
+  const promedioSca =
+    evaluados.length > 0
+      ? (evaluados.reduce((acc, l) => acc + (l.score_calidad_sca || 0), 0) / evaluados.length).toFixed(1)
+      : '0.0';
+  const especialidadPct =
+    evaluados.length > 0
+      ? Math.round((evaluados.filter((l) => (l.score_calidad_sca || 0) >= 85).length / evaluados.length) * 100)
+      : 0;
+
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#241710] flex flex-col lg:flex-row font-sans">
-      {/* Overlay móvil */}
       {mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
@@ -63,14 +77,12 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
         />
       )}
 
-      {/* SIDEBAR IZQUIERDO */}
       <aside
         className={`fixed lg:static inset-y-0 left-0 z-40 w-[260px] bg-[#FCFBF9] border-r border-[#EAE2D8] flex flex-col justify-between transition-transform duration-200 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         <div>
-          {/* Logo superior */}
           <div className="px-6 pt-6 pb-5 border-b border-[#F2EDE4] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <svg
@@ -106,14 +118,13 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
             </button>
           </div>
 
-          {/* Espacio de trabajo y navegación */}
           <div className="px-4 pt-6">
             <div className="px-2 mb-4">
               <span className="block text-[10px] font-semibold tracking-[0.18em] uppercase text-[#9B8E85]">
                 ESPACIO DE TRABAJO
               </span>
               <span className="block text-xs text-[#73655B] mt-0.5">
-                {user.roleTitle}
+                {user.name}
               </span>
             </div>
 
@@ -142,7 +153,6 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
           </div>
         </div>
 
-        {/* Tarjeta inferior de perfil / cerrar sesión */}
         <div className="p-4">
           <button
             type="button"
@@ -152,15 +162,11 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-9 h-9 rounded-full bg-[#332017] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                {initials}
+                QG
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-bold text-[#241710] truncate">
-                  {user.name}
-                </p>
-                <p className="text-[11px] text-[#73655B] truncate">
-                  {user.roleTitle}
-                </p>
+                <p className="text-xs font-bold text-[#241710] truncate">{user.name}</p>
+                <p className="text-[11px] text-[#73655B] truncate">Cambiar de rol</p>
               </div>
             </div>
             <ArrowRight className="w-3.5 h-3.5 text-[#73655B] group-hover:text-[#241710] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
@@ -168,9 +174,7 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
         </div>
       </aside>
 
-      {/* COLUMNA PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* HEADER SUPERIOR */}
         <header className="h-[74px] bg-[#FCFBF9] border-b border-[#EAE2D8] px-5 sm:px-8 flex items-center justify-between relative z-20">
           <div className="flex items-center gap-3">
             <button
@@ -217,9 +221,11 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
                   </button>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#EAE2D8] text-xs space-y-1">
-                  <p className="font-semibold text-[#241710]">Mesa de catación lista</p>
+                  <p className="font-semibold text-[#241710]">
+                    {evaluados.length} lotes con evaluación SCA
+                  </p>
                   <p className="text-[#73655B]">
-                    Ocho muestras tostadas esperan la captura de sus diez atributos sensoriales.
+                    {pendientes} lotes pendientes de ficha en MongoDB.
                   </p>
                 </div>
               </div>
@@ -227,11 +233,9 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
           </div>
         </header>
 
-        {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1 p-5 sm:p-8 lg:p-10 max-w-[1320px] w-full mx-auto">
           {activeSection === 'resumen' && (
             <div className="space-y-7">
-              {/* Encabezado de cosecha */}
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
                   <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#C07850] block mb-2">
@@ -241,40 +245,36 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
                     La calidad de cada taza, documentada.
                   </h1>
                   <p className="text-sm text-[#73655B] mt-2.5">
-                    Evaluaciones SCA, propiedades físicas y dictámenes de especialidad.
+                    Evaluaciones SCA en MongoDB y replicación de puntaje en PostgreSQL.
                   </p>
                 </div>
 
-                <div className="inline-flex items-center gap-2 text-xs text-[#6D5F55] pb-1">
-                  <span className="w-2 h-2 rounded-full bg-[#4B7A58]" />
-                  <span>Sistemas operativos</span>
-                </div>
+                <DatabaseStatusBadge health={health} />
               </div>
 
-              {/* 4 Tarjetas KPI */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {[
                   {
-                    label: 'Muestras pendientes',
-                    value: '08',
+                    label: 'Sin evaluar',
+                    value: String(pendientes).padStart(2, '0'),
                     icon: <FlaskConical className="w-4 h-4 text-[#6F4E37]" />,
                     target: 'calidad' as DanielSection
                   },
                   {
-                    label: 'Evaluadas hoy',
-                    value: '14',
+                    label: 'Lotes evaluados',
+                    value: String(evaluados.length).padStart(2, '0'),
                     icon: <LayoutGrid className="w-4 h-4 text-[#6F4E37]" />,
-                    target: 'calidad' as DanielSection
+                    target: 'dictamenes' as DanielSection
                   },
                   {
                     label: 'Promedio SCA',
-                    value: '86.4',
+                    value: promedioSca,
                     icon: <TrendingUp className="w-4 h-4 text-[#6F4E37]" />,
                     target: 'dictamenes' as DanielSection
                   },
                   {
-                    label: 'Especialidad',
-                    value: '92%',
+                    label: 'Especialidad (≥85)',
+                    value: `${especialidadPct}%`,
                     icon: <Leaf className="w-4 h-4 text-[#6F4E37]" />,
                     target: 'dictamenes' as DanielSection
                   }
@@ -288,19 +288,13 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
                     <div className="w-10 h-10 rounded-xl bg-[#F4EFE6] flex items-center justify-center mb-5">
                       {kpi.icon}
                     </div>
-                    <p className="text-xs text-[#73655B] font-medium">
-                      {kpi.label}
-                    </p>
-                    <p className="font-serif text-4xl text-[#241710] mt-1 tracking-tight">
-                      {kpi.value}
-                    </p>
+                    <p className="text-xs text-[#73655B] font-medium">{kpi.label}</p>
+                    <p className="font-serif text-4xl text-[#241710] mt-1 tracking-tight">{kpi.value}</p>
                   </button>
                 ))}
               </div>
 
-              {/* Fila inferior: Actividad de tu rol + Siguiente acción */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-                {/* Flujo principal */}
                 <div className="lg:col-span-8 bg-white border border-[#EAE2D8] rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-[0_1px_2px_rgba(36,23,16,0.03)]">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -320,17 +314,17 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
                     {[
                       {
                         title: 'Fichas SCA',
-                        stat: '14 capturadas',
+                        stat: `${evaluados.length} registradas`,
                         target: 'calidad' as DanielSection
                       },
                       {
-                        title: 'Notas de taza',
-                        stat: '38 descriptores',
+                        title: 'Catación',
+                        stat: '10 atributos SCA',
                         target: 'calidad' as DanielSection
                       },
                       {
-                        title: 'Dictámenes',
-                        stat: '11 emitidos',
+                        title: 'Pasaporte',
+                        stat: 'Consulta MongoDB',
                         target: 'dictamenes' as DanielSection
                       }
                     ].map((card) => (
@@ -340,9 +334,7 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
                       >
                         <div>
                           <p className="text-xs text-[#73655B]">{card.title}</p>
-                          <p className="text-sm font-bold text-[#241710] mt-1">
-                            {card.stat}
-                          </p>
+                          <p className="text-sm font-bold text-[#241710] mt-1">{card.stat}</p>
                         </div>
                         <button
                           type="button"
@@ -357,7 +349,6 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
                   </div>
                 </div>
 
-                {/* Siguiente acción */}
                 <div className="lg:col-span-4 bg-white border border-[#EAE2D8] rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-[0_1px_2px_rgba(36,23,16,0.03)]">
                   <div>
                     <div className="w-10 h-10 rounded-full bg-[#F4EFE6] flex items-center justify-center text-[#6F4E37] mb-5">
@@ -370,7 +361,7 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
                       Mesa de catación lista
                     </h2>
                     <p className="text-xs sm:text-[13px] text-[#73655B] mt-3 leading-relaxed">
-                      Ocho muestras tostadas esperan la captura de sus diez atributos sensoriales.
+                      Captura los diez atributos sensoriales de cualquier lote y replícalos en PostgreSQL.
                     </p>
                   </div>
 
@@ -387,9 +378,10 @@ export const DanielDashboard: React.FC<DanielDashboardProps> = ({ user, onLogout
             </div>
           )}
 
-          {activeSection === 'calidad' && <CalidadCatacionView />}
-          {activeSection === 'fisicos' && <ParametrosFisicosView />}
-          {activeSection === 'dictamenes' && <DictamenesSensorialesView />}
+          {activeSection === 'calidad' && (
+            <CalidadCatacionView lotes={lotes} onRefresh={loadData} />
+          )}
+          {activeSection === 'dictamenes' && <PasaporteSensorialView lotes={lotes} />}
         </main>
       </div>
     </div>
