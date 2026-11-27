@@ -55,9 +55,9 @@ services:
     restart: unless-stopped
     environment:
       NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-kapeh_secret_2026}
-      NEO4J_dbms_memory_pagecache_size: 512M
-      NEO4J_dbms_memory_heap_initial__size: 512M
-      NEO4J_dbms_memory_heap_max__size: 1G
+      NEO4J_server_memory_pagecache_size: 512M
+      NEO4J_server_memory_heap_initial__size: 512M
+      NEO4J_server_memory_heap_max__size: 1G
     ports:
       - "${NEO4J_HTTP_PORT:-7474}:7474" # Panel Web Browser para demostración
       - "${NEO4J_BOLT_PORT:-7687}:7687" # Protocolo Bolt para Backend Driver
@@ -67,10 +67,11 @@ services:
     networks:
       - kapeh-network
     healthcheck:
-      test: ["CMD", "wget", "--spider", "http://localhost:7474"]
+      test: ["CMD-SHELL", "cypher-shell -u ${NEO4J_USER:-neo4j} -p ${NEO4J_PASSWORD:-kapeh_secret_2026} 'RETURN 1' > /dev/null 2>&1 || exit 1"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 10s
+      retries: 6
+      start_period: 30s
 
   # ============================================================================
   # 4. Backend Orquestador Políglota: Node.js + TypeScript (Express API REST)

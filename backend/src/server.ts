@@ -6,17 +6,17 @@ const app = createApp();
 
 const server = app.listen(env.PORT, env.HOST, async () => {
   console.log('================================================================');
-  console.log(`☕ KapehTrace Backend API REST iniciado exitosamente`);
-  console.log(`📡 URL Base:        http://localhost:${env.PORT}`);
-  console.log(`📚 Swagger Docs:    http://localhost:${env.PORT}/api-docs`);
-  console.log(`🩺 Healthcheck:     http://localhost:${env.PORT}/health`);
+  console.log(`KapehTrace Backend API REST iniciado exitosamente`);
+  console.log(`URL Base:        http://localhost:${env.PORT}`);
+  console.log(`Swagger Docs:    http://localhost:${env.PORT}/api-docs`);
+  console.log(`Healthcheck:     http://localhost:${env.PORT}/health`);
   console.log('================================================================');
 
   const dbStatus = await checkDatabaseConnections();
-  console.log('🔌 Estado de Conexión de Persistencia:');
-  console.log(`   - PostgreSQL:  ${dbStatus.postgres ? '✅ Conectado' : '⚠️ No disponible'}`);
-  console.log(`   - MongoDB:     ${dbStatus.mongodb ? '✅ Conectado' : '⚠️ No disponible'}`);
-  console.log(`   - Neo4j:       ${dbStatus.neo4j ? '✅ Conectado' : '⚠️ No disponible'}`);
+  console.log('Estado de Conexión de Persistencia:');
+  console.log(`   - PostgreSQL:  ${dbStatus.postgres ? 'Conectado' : 'No disponible'}`);
+  console.log(`   - MongoDB:     ${dbStatus.mongodb ? 'Conectado' : 'No disponible'}`);
+  console.log(`   - Neo4j:       ${dbStatus.neo4j ? 'Conectado' : 'No disponible'}`);
   console.log('================================================================');
 });
 
