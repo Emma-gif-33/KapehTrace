@@ -225,7 +225,7 @@ export const CatadorDashboard: React.FC<CatadorDashboardProps> = ({ user, onLogo
                     {evaluados.length} lotes con evaluación SCA
                   </p>
                   <p className="text-[#73655B]">
-                    {pendientes} lotes pendientes de ficha en MongoDB.
+                    {pendientes} lotes pendientes de evaluación sensorial.
                   </p>
                 </div>
               </div>
@@ -245,7 +245,7 @@ export const CatadorDashboard: React.FC<CatadorDashboardProps> = ({ user, onLogo
                     La calidad de cada taza, documentada.
                   </h1>
                   <p className="text-sm text-[#73655B] mt-2.5">
-                    Evaluaciones SCA en MongoDB y replicación de puntaje en PostgreSQL.
+                    Evaluaciones sensoriales SCA y actualización automática de puntaje por lote.
                   </p>
                 </div>
 
@@ -324,7 +324,7 @@ export const CatadorDashboard: React.FC<CatadorDashboardProps> = ({ user, onLogo
                       },
                       {
                         title: 'Pasaporte',
-                        stat: 'Consulta MongoDB',
+                        stat: 'Historial sensorial',
                         target: 'dictamenes' as CatadorSection
                       }
                     ].map((card) => (
@@ -361,7 +361,7 @@ export const CatadorDashboard: React.FC<CatadorDashboardProps> = ({ user, onLogo
                       Mesa de catación lista
                     </h2>
                     <p className="text-xs sm:text-[13px] text-[#73655B] mt-3 leading-relaxed">
-                      Captura los diez atributos sensoriales de cualquier lote y replícalos en PostgreSQL.
+                      Captura los diez atributos sensoriales de cualquier lote y actualiza su calificación.
                     </p>
                   </div>
 

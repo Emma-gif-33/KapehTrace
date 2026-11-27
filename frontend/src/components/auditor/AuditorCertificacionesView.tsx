@@ -32,13 +32,13 @@ export const AuditorCertificacionesView: React.FC<AuditorCertificacionesViewProp
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#C07850] block mb-2">
-            MONGODB · GET /API/LOTES/:ID/PASAPORTE
+            CERTIFICACIONES E INOCUIDAD
           </span>
           <h1 className="font-serif text-3xl sm:text-[42px] leading-[1.1] text-[#241710] font-normal tracking-tight">
             Certificaciones y laboratorio
           </h1>
           <p className="text-sm text-[#73655B] mt-2.5">
-            Consulta los expedientes químicos y dictámenes orgánicos almacenados en MongoDB por lote
+            Consulta los expedientes químicos y dictámenes orgánicos registrados por lote
           </p>
         </div>
 
@@ -47,7 +47,7 @@ export const AuditorCertificacionesView: React.FC<AuditorCertificacionesViewProp
 
       <div className="bg-white border border-[#EAE2D8] rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <span className="text-xs font-medium text-[#73655B]">
-          Selecciona un lote para consultar sus expedientes en MongoDB:
+          Selecciona un lote para consultar sus expedientes:
         </span>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <select
@@ -76,7 +76,7 @@ export const AuditorCertificacionesView: React.FC<AuditorCertificacionesViewProp
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {pasaporte.certificaciones_laboratorio.length === 0 ? (
             <div className="md:col-span-2 bg-white border border-[#EAE2D8] rounded-2xl p-8 text-center text-xs text-[#73655B]">
-              Este lote no tiene expedientes de laboratorio registrados todavía en MongoDB.
+              Este lote no tiene expedientes de laboratorio registrados todavía.
             </div>
           ) : (
             pasaporte.certificaciones_laboratorio.map((cert, idx) => {

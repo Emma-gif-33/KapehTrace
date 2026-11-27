@@ -239,9 +239,11 @@ export const TrazabilidadDashboard: React.FC<TrazabilidadDashboardProps> = ({ us
                   </button>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#EAE2D8] text-xs space-y-1">
-                  <p className="font-semibold text-[#241710]">{health?.architecture || 'Arquitectura Políglota'}</p>
+                  <p className="font-semibold text-[#241710]">
+                    {health?.status === 'UP' ? 'Sistema sincronizado' : 'Modo de respaldo'}
+                  </p>
                   <p className="text-[#73655B]">
-                    {lotes.length} lotes cargados desde PostgreSQL.
+                    {lotes.length} lotes sincronizados en inventario.
                   </p>
                 </div>
               </div>
@@ -261,7 +263,7 @@ export const TrazabilidadDashboard: React.FC<TrazabilidadDashboardProps> = ({ us
                     La cadena de custodia, sin rupturas.
                   </h1>
                   <p className="text-sm text-[#73655B] mt-2.5">
-                    Recepciones, mezclas de exportación y linaje en PostgreSQL, MongoDB y Neo4j.
+                    Recepciones, mezclas de exportación y cadena de custodia de origen.
                   </p>
                 </div>
 
@@ -339,7 +341,7 @@ export const TrazabilidadDashboard: React.FC<TrazabilidadDashboardProps> = ({ us
                         target: 'procesos' as TrazabilidadSection
                       },
                       {
-                        title: 'Grafo Neo4j',
+                        title: 'Red de trazabilidad',
                         stat: 'Linaje y origen',
                         target: 'trazabilidad' as TrazabilidadSection
                       }
@@ -377,7 +379,7 @@ export const TrazabilidadDashboard: React.FC<TrazabilidadDashboardProps> = ({ us
                       Consolidar mezcla de exportación
                     </h2>
                     <p className="text-xs sm:text-[13px] text-[#73655B] mt-3 leading-relaxed">
-                      Combina lotes pergamino verificados para generar un nuevo lote de exportación en PostgreSQL y Neo4j.
+                      Combina lotes pergamino verificados para generar un nuevo lote de exportación.
                     </p>
                   </div>
 

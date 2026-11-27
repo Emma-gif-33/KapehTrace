@@ -57,13 +57,13 @@ export const AuditorInocuidadView: React.FC<AuditorInocuidadViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#C07850] block mb-2">
-            MONGO + NEO4J + POSTGRESQL · POST /API/CALIDAD/ALERTA-CUARENTENA
+            CONTROL SANITARIO · ALERTA DE INOCUIDAD
           </span>
           <h1 className="font-serif text-3xl sm:text-[42px] leading-[1.1] text-[#241710] font-normal tracking-tight">
             Auditoría e inocuidad
           </h1>
           <p className="text-sm text-[#73655B] mt-2.5">
-            Registra análisis no conformes en MongoDB, rastrea impacto en Neo4j y bloquea lotes en PostgreSQL
+            Registra análisis no conformes, rastrea el origen afectado y bloquea lotes en riesgo
           </p>
         </div>
 
@@ -182,7 +182,7 @@ export const AuditorInocuidadView: React.FC<AuditorInocuidadViewProps> = ({
                 <span>{resultado.mensaje}</span>
               </div>
               <p className="text-[#73655B]">
-                Parcela sospechosa (Neo4j): <strong className="text-[#241710]">{resultado.parcela_origen_sospechosa}</strong>
+                Parcela de origen identificada: <strong className="text-[#241710]">{resultado.parcela_origen_sospechosa}</strong>
               </p>
               <p className="text-[#73655B]">
                 Lotes bloqueados: <strong className="text-[#241710]">{resultado.codigos_lotes_afectados.join(', ')}</strong>
@@ -196,10 +196,10 @@ export const AuditorInocuidadView: React.FC<AuditorInocuidadViewProps> = ({
           )}
         </form>
 
-        {/* Estado en PostgreSQL */}
+        {/* Resumen de estado */}
         <div className="lg:col-span-5 bg-white border border-[#EAE2D8] rounded-2xl p-6 sm:p-7 shadow-[0_1px_2px_rgba(36,23,16,0.03)]">
           <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#9B8E85] block mb-4">
-            ESTADO EN POSTGRESQL
+            ESTADO DEL LOTE
           </span>
 
           <div className="divide-y divide-[#F2EDE4]">

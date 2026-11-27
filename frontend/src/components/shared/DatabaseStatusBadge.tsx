@@ -10,7 +10,7 @@ export const DatabaseStatusBadge: React.FC<DatabaseStatusBadgeProps> = ({ health
     return (
       <div className="inline-flex items-center gap-2 text-xs text-[#73655B]">
         <span className="w-2 h-2 rounded-full bg-[#C07850] animate-pulse" />
-        <span>Verificando bases de datos...</span>
+        <span>Verificando conexión del sistema...</span>
       </div>
     );
   }
@@ -35,23 +35,11 @@ export const DatabaseStatusBadge: React.FC<DatabaseStatusBadgeProps> = ({ health
           }`}
         />
         {isUp
-          ? '3 BDs conectadas'
+          ? 'Sistema en línea'
           : isDegraded
-            ? 'Conexión parcial'
-            : 'Sin conexión al servidor (respaldo)'}
+            ? 'Servicio parcial'
+            : 'Modo sin conexión'}
       </span>
-
-      <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono text-[#73655B]">
-        <span className={health.databases.postgres ? 'text-[#356847]' : 'text-[#9B8E85]'}>
-          PG {health.databases.postgres ? '●' : '○'}
-        </span>
-        <span className={health.databases.mongodb ? 'text-[#356847]' : 'text-[#9B8E85]'}>
-          Mongo {health.databases.mongodb ? '●' : '○'}
-        </span>
-        <span className={health.databases.neo4j ? 'text-[#356847]' : 'text-[#9B8E85]'}>
-          Neo4j {health.databases.neo4j ? '●' : '○'}
-        </span>
-      </div>
     </div>
   );
 };

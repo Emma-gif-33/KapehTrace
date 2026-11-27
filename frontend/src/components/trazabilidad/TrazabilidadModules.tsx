@@ -54,7 +54,7 @@ export const RecepcionCosechasView: React.FC<RecepcionLotesProps> = ({ lotes, on
       setFeedback({
         type: 'ok',
         text: res.online
-          ? `Lote ${res.lote.codigo_lote} guardado en PostgreSQL (${res.lote.sacos_69kg} sacos).`
+          ? `Lote ${res.lote.codigo_lote} registrado en inventario (${res.lote.sacos_69kg} sacos).`
           : `Lote ${res.lote.codigo_lote} guardado en respaldo local (${res.lote.sacos_69kg} sacos).`
       });
       setCodigoLote('');
@@ -71,7 +71,7 @@ export const RecepcionCosechasView: React.FC<RecepcionLotesProps> = ({ lotes, on
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#C07850] block mb-1.5">
-            POSTGRESQL · POST /API/LOTES
+            RECEPCIÓN DE CAFÉ · NUEVO LOTE
           </span>
           <h2 className="font-serif text-3xl text-[#241710] tracking-tight">
             Recepción de lotes
@@ -277,13 +277,13 @@ export const ProcesosMezclasView: React.FC<RecepcionLotesProps> = ({ lotes, onRe
     <div className="space-y-6">
       <div>
         <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#C07850] block mb-1.5">
-          POSTGRESQL + NEO4J · POST /API/LOTES/MEZCLA
+          MEZCLAS DE EXPORTACIÓN · CONSOLIDACIÓN
         </span>
         <h2 className="font-serif text-3xl text-[#241710] tracking-tight">
           Mezclas de exportación
         </h2>
         <p className="text-sm text-[#73655B] mt-1">
-          Consolida lotes pergamino en un lote de exportación sincronizado en PostgreSQL y Neo4j.
+          Consolida lotes pergamino en un nuevo lote homogéneo de exportación.
         </p>
       </div>
 
@@ -438,7 +438,7 @@ export const ProcesosMezclasView: React.FC<RecepcionLotesProps> = ({ lotes, onRe
             disabled={submitting}
             className="px-5 py-2.5 rounded-xl bg-[#332017] hover:bg-[#23150e] text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
           >
-            {submitting ? 'Consolidando...' : 'Consolidar mezcla en PostgreSQL y Neo4j'}
+            {submitting ? 'Consolidando...' : 'Consolidar mezcla de exportación'}
           </button>
         </div>
       </form>
@@ -495,13 +495,13 @@ export const TrazabilidadView: React.FC<{ lotes: Lote[] }> = ({ lotes }) => {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#C07850] block mb-1.5">
-            NEO4J + PASAPORTE DIGITAL · GET /GRAFO & /PASAPORTE
+            CADENA DE CUSTODIA · LINAJE DEL LOTE
           </span>
           <h2 className="font-serif text-3xl text-[#241710] tracking-tight">
             Trazabilidad y linaje
           </h2>
           <p className="text-sm text-[#73655B] mt-1">
-            Consulta el grafo de custodia en Neo4j y el pasaporte integrado de las 3 bases de datos.
+            Consulta la red de procedencia y el pasaporte digital completo del lote.
           </p>
         </div>
 
@@ -536,7 +536,7 @@ export const TrazabilidadView: React.FC<{ lotes: Lote[] }> = ({ lotes }) => {
           <GitBranch className="w-6 h-6 text-[#C07850] mx-auto" />
           <p className="text-sm font-semibold text-[#241710]">Selecciona un lote y presiona "Consultar grafo"</p>
           <p className="text-xs text-[#73655B]">
-            Se consultarán los nodos y relaciones en Neo4j junto con el pasaporte de PostgreSQL y MongoDB.
+            Se consultará el árbol de origen junto con la ficha comercial y de calidad del lote.
           </p>
         </div>
       )}
@@ -546,7 +546,7 @@ export const TrazabilidadView: React.FC<{ lotes: Lote[] }> = ({ lotes }) => {
           <div className="bg-white border border-[#EAE2D8] rounded-2xl p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-xs text-[#73655B]">Nodos encontrados en Neo4j para</span>
+                <span className="text-xs text-[#73655B]">Etapas de trazabilidad encontradas para</span>
                 <h3 className="font-serif text-2xl text-[#241710]">{selectedCodigo}</h3>
               </div>
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#356847] bg-[#EEF5F0] px-3 py-1 rounded-full">

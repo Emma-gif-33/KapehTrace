@@ -89,7 +89,7 @@ export const CalidadCatacionView: React.FC<CatadorViewProps> = ({ lotes, onRefre
       setFeedback({
         type: 'ok',
         text: res.online
-          ? `Ficha SCA guardada en MongoDB y score (${res.score_total}) replicado en PostgreSQL.`
+          ? `Ficha SCA guardada correctamente con un puntaje de ${res.score_total} pts.`
           : `Score (${res.score_total}) guardado en respaldo local (${res.categoria}).`
       });
     } catch (err) {
@@ -103,13 +103,13 @@ export const CalidadCatacionView: React.FC<CatadorViewProps> = ({ lotes, onRefre
     <div className="space-y-6">
       <div>
         <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#C07850] block mb-1.5">
-          MONGODB + POSTGRESQL · POST /API/CALIDAD/INSPECCION
+          EVALUACIÓN SENSORIAL · PROTOCOLO SCA
         </span>
         <h2 className="font-serif text-3xl text-[#241710] tracking-tight">
           Calidad y catación SCA
         </h2>
         <p className="text-sm text-[#73655B] mt-1">
-          Captura los 10 atributos SCA y parámetros físicos de la muestra para guardarlos en MongoDB y actualizar el score en PostgreSQL.
+          Captura los 10 atributos SCA y parámetros físicos de la muestra para registrar su calificación oficial.
         </p>
       </div>
 
@@ -294,7 +294,7 @@ export const CalidadCatacionView: React.FC<CatadorViewProps> = ({ lotes, onRefre
               className="px-5 py-2.5 rounded-xl bg-[#332017] hover:bg-[#23150e] text-white text-xs font-semibold transition-colors cursor-pointer inline-flex items-center gap-2 disabled:opacity-50"
             >
               <FlaskConical className="w-4 h-4" />
-              <span>{submitting ? 'Guardando...' : 'Guardar ficha SCA en MongoDB'}</span>
+              <span>{submitting ? 'Guardando...' : 'Guardar ficha SCA'}</span>
             </button>
           </div>
         </form>
@@ -323,13 +323,13 @@ export const PasaporteSensorialView: React.FC<{ lotes: Lote[] }> = ({ lotes }) =
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#C07850] block mb-1.5">
-            MONGODB + POSTGRESQL · GET /API/LOTES/:ID/PASAPORTE
+            HISTORIAL DE CATACIÓN · PROTOCOLO SCA
           </span>
           <h2 className="font-serif text-3xl text-[#241710] tracking-tight">
             Dictámenes y pasaporte sensorial
           </h2>
           <p className="text-sm text-[#73655B] mt-1">
-            Consulta la ficha SCA registrada en MongoDB junto con los datos físicos de la muestra.
+            Consulta la ficha SCA registrada junto con los parámetros físicos de la muestra.
           </p>
         </div>
 
@@ -361,7 +361,7 @@ export const PasaporteSensorialView: React.FC<{ lotes: Lote[] }> = ({ lotes }) =
           <ShieldCheck className="w-6 h-6 text-[#C07850] mx-auto" />
           <p className="text-sm font-semibold text-[#241710]">Selecciona un lote y presiona "Ver dictamen"</p>
           <p className="text-xs text-[#73655B]">
-            Muestra la evaluación sensorial almacenada en MongoDB desde el endpoint de pasaporte digital.
+            Muestra la evaluación sensorial y los atributos registrados en el pasaporte del lote.
           </p>
         </div>
       )}
@@ -382,7 +382,7 @@ export const PasaporteSensorialView: React.FC<{ lotes: Lote[] }> = ({ lotes }) =
               </div>
             ) : (
               <span className="px-3 py-1 rounded-full bg-[#F7EFE6] text-[#9A5B32] text-xs font-medium">
-                Sin ficha SCA registrada en MongoDB
+                Sin ficha SCA registrada
               </span>
             )}
           </div>

@@ -217,7 +217,7 @@ export const ComercialDashboard: React.FC<ComercialDashboardProps> = ({ user, on
                 <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#EAE2D8] text-xs space-y-1">
                   <p className="font-semibold text-[#241710]">{sacosDisponibles} sacos disponibles</p>
                   <p className="text-[#73655B]">
-                    Consulta cada lote en Inventario para ver su contrato asociado en PostgreSQL.
+                    Consulta cada lote en Inventario para ver su contrato comercial asociado.
                   </p>
                 </div>
               </div>
@@ -237,7 +237,7 @@ export const ComercialDashboard: React.FC<ComercialDashboardProps> = ({ user, on
                     Inventario y compromisos, conciliados.
                   </h1>
                   <p className="text-sm text-[#73655B] mt-2.5">
-                    Stock disponible y contratos asociados consultados directamente en PostgreSQL.
+                    Stock disponible y contratos comerciales actualizados.
                   </p>
                 </div>
 
@@ -291,7 +291,7 @@ export const ComercialDashboard: React.FC<ComercialDashboardProps> = ({ user, on
                     Consulta inventario, valor USD y contrato asociado por lote
                   </h2>
                   <p className="text-xs sm:text-sm text-[#73655B] mt-1.5">
-                    Haz clic en cualquier lote dentro del inventario para ver su pasaporte completo en PostgreSQL, MongoDB y Neo4j.
+                    Haz clic en cualquier lote dentro del inventario para ver su pasaporte completo de calidad y origen.
                   </p>
                 </div>
 

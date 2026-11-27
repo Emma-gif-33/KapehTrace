@@ -245,7 +245,7 @@ export const AuditorDashboard: React.FC<AuditorDashboardProps> = ({ user, onLogo
                     La seguridad del café, bajo vigilancia.
                   </h1>
                   <p className="text-sm text-[#73655B] mt-2.5">
-                    Expedientes químicos en MongoDB, impacto en Neo4j y cuarentenas en PostgreSQL.
+                    Revisión de expedientes químicos, trazabilidad de impacto y control de cuarentenas.
                   </p>
                 </div>
 
@@ -269,8 +269,8 @@ export const AuditorDashboard: React.FC<AuditorDashboardProps> = ({ user, onLogo
                     critical: false
                   },
                   {
-                    label: 'Bases conectadas',
-                    value: health ? `${[health.databases.postgres, health.databases.mongodb, health.databases.neo4j].filter(Boolean).length}/3` : '0/3',
+                    label: 'Estado del sistema',
+                    value: health?.status === 'UP' ? 'En línea' : health?.status === 'DEGRADED' ? 'Parcial' : 'Offline',
                     icon: <ShieldCheck className="w-4 h-4 text-[#6F4E37]" />,
                     target: 'auditoria' as AuditorSection,
                     critical: false
@@ -328,7 +328,7 @@ export const AuditorDashboard: React.FC<AuditorDashboardProps> = ({ user, onLogo
                         target: 'auditoria' as AuditorSection
                       },
                       {
-                        title: 'Expedientes MongoDB',
+                        title: 'Expedientes de laboratorio',
                         stat: 'Consulta por pasaporte',
                         target: 'certificaciones' as AuditorSection
                       }
@@ -366,7 +366,7 @@ export const AuditorDashboard: React.FC<AuditorDashboardProps> = ({ user, onLogo
                       Protocolo de cuarentena
                     </h2>
                     <p className="text-xs sm:text-[13px] text-[#73655B] mt-3 leading-relaxed">
-                      Ejecuta una alerta sanitaria para registrar el expediente en MongoDB y bloquear lotes relacionados en Neo4j y PostgreSQL.
+                      Ejecuta una alerta sanitaria para documentar el hallazgo y bloquear preventivamente los lotes relacionados.
                     </p>
                   </div>
 

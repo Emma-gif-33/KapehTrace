@@ -61,7 +61,7 @@ export const ComercialInventarioView: React.FC<ComercialInventarioViewProps> = (
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#C07850] block mb-2">
-            POSTGRESQL · GET /API/LOTES & /PASAPORTE
+            INVENTARIO Y CONTRATOS · CATÁLOGO COMERCIAL
           </span>
           <h1 className="font-serif text-3xl sm:text-[42px] leading-[1.1] text-[#241710] font-normal tracking-tight">
             Inventario de lotes
@@ -170,11 +170,11 @@ export const ComercialInventarioView: React.FC<ComercialInventarioViewProps> = (
                       <tr className="bg-[#FAF7F2]">
                         <td colSpan={6} className="px-6 py-4 text-xs text-[#73655B]">
                           {loadingPasaporte ? (
-                            <span>Cargando pasaporte comercial de las 3 bases de datos...</span>
+                            <span>Cargando pasaporte completo del lote...</span>
                           ) : pasaporte ? (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               <div>
-                                <p className="font-semibold text-[#241710]">Valor comercial (PostgreSQL)</p>
+                                <p className="font-semibold text-[#241710]">Valor comercial</p>
                                 <p className="mt-1">
                                   {pasaporte.comercial.peso_neto_kg.toLocaleString()} kg · ${pasaporte.comercial.precio_base_kg_usd} USD/kg
                                 </p>
@@ -188,7 +188,7 @@ export const ComercialInventarioView: React.FC<ComercialInventarioViewProps> = (
                                 </p>
                               </div>
                               <div>
-                                <p className="font-semibold text-[#241710]">Calidad y origen (Mongo + Neo4j)</p>
+                                <p className="font-semibold text-[#241710]">Calidad y origen</p>
                                 <p className="mt-1">
                                   SCA: {pasaporte.calidad_sensorial?.score_total ?? 'Sin evaluar'} · Origenes: {pasaporte.linaje_custodia.length}
                                 </p>
