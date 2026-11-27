@@ -1,28 +1,28 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   LayoutGrid,
   Leaf,
   Box,
-  FileText,
   Bell,
   ArrowRight,
   Menu,
   X
 } from 'lucide-react';
 import { User } from '../../types/auth';
+import { HealthStatus, Lote } from '../../types/lotes';
+import { checkHealth, fetchLotes } from '../../services/api';
+import { DatabaseStatusBadge } from '../shared/DatabaseStatusBadge';
 import {
   RecepcionCosechasView,
   ProcesosMezclasView,
-  TrazabilidadView,
-  ContenedoresView
+  TrazabilidadView
 } from './LuciaModules';
 
 export type LuciaSection =
   | 'resumen'
   | 'recepcion'
   | 'procesos'
-  | 'trazabilidad'
-  | 'contenedores';
+  | 'trazabilidad';
 
 interface LuciaDashboardProps {
   user: User;
@@ -49,30 +49,38 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
   const [activeSection, setActiveSection] = useState<LuciaSection>('resumen');
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [lotes, setLotes] = useState<Lote[]>([]);
+  const [health, setHealth] = useState<HealthStatus | null>(null);
+
+  const loadData = useCallback(async () => {
+    const [healthData, lotesData] = await Promise.all([checkHealth(), fetchLotes()]);
+    setHealth(healthData);
+    setLotes(lotesData.lotes);
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const navItems: { id: LuciaSection; label: string; icon: React.ReactNode }[] = [
     { id: 'resumen', label: 'Resumen', icon: <LayoutGrid className="w-4 h-4" /> },
-    { id: 'recepcion', label: 'Recepción de cosechas', icon: <Leaf className="w-4 h-4" /> },
-    { id: 'procesos', label: 'Procesos y mezclas', icon: <Box className="w-4 h-4" /> },
-    { id: 'trazabilidad', label: 'Trazabilidad', icon: <TwoNodesIcon className="w-4 h-4" /> },
-    { id: 'contenedores', label: 'Contenedores', icon: <FileText className="w-4 h-4" /> }
+    { id: 'recepcion', label: 'Recepción de lotes', icon: <Leaf className="w-4 h-4" /> },
+    { id: 'procesos', label: 'Mezclas de exportación', icon: <Box className="w-4 h-4" /> },
+    { id: 'trazabilidad', label: 'Trazabilidad y grafo', icon: <TwoNodesIcon className="w-4 h-4" /> }
   ];
-
-  const initials = user.name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
 
   const handleNavigate = (section: LuciaSection) => {
     setActiveSection(section);
     setMobileMenuOpen(false);
   };
 
+  const totalLotes = lotes.length;
+  const lotesPergamino = lotes.filter((l) => l.tipo_lote === 'PERGAMINO' || l.tipo_lote === 'CEREZA').length;
+  const lotesExportacion = lotes.filter((l) => l.tipo_lote === 'EXPORTACION').length;
+  const sacosTotales = lotes.reduce((acc, l) => acc + l.sacos_69kg, 0);
+
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#241710] flex flex-col lg:flex-row font-sans">
-      {/* Overlay móvil */}
       {mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
@@ -87,7 +95,6 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
         }`}
       >
         <div>
-          {/* Logo superior */}
           <div className="px-6 pt-6 pb-5 border-b border-[#F2EDE4] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <svg
@@ -123,14 +130,13 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
             </button>
           </div>
 
-          {/* Espacio de trabajo y navegación */}
           <div className="px-4 pt-6">
             <div className="px-2 mb-4">
               <span className="block text-[10px] font-semibold tracking-[0.18em] uppercase text-[#9B8E85]">
                 ESPACIO DE TRABAJO
               </span>
               <span className="block text-xs text-[#73655B] mt-0.5">
-                {user.roleTitle}
+                {user.name}
               </span>
             </div>
 
@@ -159,7 +165,7 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
           </div>
         </div>
 
-        {/* Tarjeta inferior de perfil / cerrar sesión */}
+        {/* Tarjeta inferior de perfil sin nombre personal */}
         <div className="p-4">
           <button
             type="button"
@@ -169,14 +175,14 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-9 h-9 rounded-full bg-[#332017] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                {initials}
+                JT
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-[#241710] truncate">
                   {user.name}
                 </p>
                 <p className="text-[11px] text-[#73655B] truncate">
-                  {user.roleTitle}
+                  Cambiar de rol
                 </p>
               </div>
             </div>
@@ -187,7 +193,6 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
 
       {/* COLUMNA PRINCIPAL */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* HEADER SUPERIOR */}
         <header className="h-[74px] bg-[#FCFBF9] border-b border-[#EAE2D8] px-5 sm:px-8 flex items-center justify-between relative z-20">
           <div className="flex items-center gap-3">
             <button
@@ -223,7 +228,7 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
               <div className="absolute right-0 mt-2 w-72 bg-white border border-[#EAE2D8] rounded-2xl shadow-xl p-4 z-30">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-[#C07850]">
-                    Alertas de trazabilidad
+                    Estado de sincronización
                   </span>
                   <button
                     type="button"
@@ -234,9 +239,9 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
                   </button>
                 </div>
                 <div className="p-3 rounded-xl bg-[#FAF7F2] border border-[#EAE2D8] text-xs space-y-1">
-                  <p className="font-semibold text-[#241710]">Mezcla MX-024 pendiente de cierre</p>
+                  <p className="font-semibold text-[#241710]">{health?.architecture || 'Arquitectura Políglota'}</p>
                   <p className="text-[#73655B]">
-                    Confirmar proporción de tres lotes antes de asignar contenedor.
+                    {lotes.length} lotes cargados desde PostgreSQL.
                   </p>
                 </div>
               </div>
@@ -244,11 +249,9 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
           </div>
         </header>
 
-        {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1 p-5 sm:p-8 lg:p-10 max-w-[1320px] w-full mx-auto">
           {activeSection === 'resumen' && (
             <div className="space-y-7">
-              {/* Encabezado de cosecha */}
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
                   <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#C07850] block mb-2">
@@ -258,42 +261,38 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
                     La cadena de custodia, sin rupturas.
                   </h1>
                   <p className="text-sm text-[#73655B] mt-2.5">
-                    Recepciones, transformaciones, mezclas y embarques de la cosecha actual.
+                    Recepciones, mezclas de exportación y linaje en PostgreSQL, MongoDB y Neo4j.
                   </p>
                 </div>
 
-                <div className="inline-flex items-center gap-2 text-xs text-[#6D5F55] pb-1">
-                  <span className="w-2 h-2 rounded-full bg-[#4B7A58]" />
-                  <span>Sistemas operativos</span>
-                </div>
+                <DatabaseStatusBadge health={health} />
               </div>
 
-              {/* 4 Tarjetas KPI */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {[
                   {
-                    label: 'Entregas hoy',
-                    value: '18',
+                    label: 'Total de lotes',
+                    value: String(totalLotes).padStart(2, '0'),
                     icon: <Leaf className="w-4 h-4 text-[#6F4E37]" />,
                     target: 'recepcion' as LuciaSection
                   },
                   {
-                    label: 'Lotes en proceso',
-                    value: '12',
+                    label: 'Pergamino / Cereza',
+                    value: String(lotesPergamino).padStart(2, '0'),
                     icon: <Box className="w-4 h-4 text-[#6F4E37]" />,
-                    target: 'procesos' as LuciaSection
+                    target: 'recepcion' as LuciaSection
                   },
                   {
-                    label: 'Mezclas activas',
-                    value: '05',
+                    label: 'Lotes exportación',
+                    value: String(lotesExportacion).padStart(2, '0'),
                     icon: <TwoNodesIcon className="w-4 h-4 text-[#6F4E37]" />,
                     target: 'procesos' as LuciaSection
                   },
                   {
-                    label: 'Contenedores',
-                    value: '02',
-                    icon: <FileText className="w-4 h-4 text-[#6F4E37]" />,
-                    target: 'contenedores' as LuciaSection
+                    label: 'Sacos (69 kg)',
+                    value: String(sacosTotales),
+                    icon: <Box className="w-4 h-4 text-[#6F4E37]" />,
+                    target: 'trazabilidad' as LuciaSection
                   }
                 ].map((kpi) => (
                   <button
@@ -305,19 +304,13 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
                     <div className="w-10 h-10 rounded-xl bg-[#F4EFE6] flex items-center justify-center mb-5">
                       {kpi.icon}
                     </div>
-                    <p className="text-xs text-[#73655B] font-medium">
-                      {kpi.label}
-                    </p>
-                    <p className="font-serif text-4xl text-[#241710] mt-1 tracking-tight">
-                      {kpi.value}
-                    </p>
+                    <p className="text-xs text-[#73655B] font-medium">{kpi.label}</p>
+                    <p className="font-serif text-4xl text-[#241710] mt-1 tracking-tight">{kpi.value}</p>
                   </button>
                 ))}
               </div>
 
-              {/* Fila inferior: Actividad de tu rol + Siguiente acción */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-                {/* Flujo principal */}
                 <div className="lg:col-span-8 bg-white border border-[#EAE2D8] rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-[0_1px_2px_rgba(36,23,16,0.03)]">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -337,18 +330,18 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
                     {[
                       {
                         title: 'Recepciones',
-                        stat: '6 registradas',
+                        stat: `${totalLotes} lotes en bodega`,
                         target: 'recepcion' as LuciaSection
                       },
                       {
-                        title: 'Transformaciones',
-                        stat: '3 actualizadas',
+                        title: 'Mezclas',
+                        stat: `${lotesExportacion} blends activos`,
                         target: 'procesos' as LuciaSection
                       },
                       {
-                        title: 'Estibas',
-                        stat: '1 asignada',
-                        target: 'contenedores' as LuciaSection
+                        title: 'Grafo Neo4j',
+                        stat: 'Linaje y origen',
+                        target: 'trazabilidad' as LuciaSection
                       }
                     ].map((card) => (
                       <div
@@ -357,9 +350,7 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
                       >
                         <div>
                           <p className="text-xs text-[#73655B]">{card.title}</p>
-                          <p className="text-sm font-bold text-[#241710] mt-1">
-                            {card.stat}
-                          </p>
+                          <p className="text-sm font-bold text-[#241710] mt-1">{card.stat}</p>
                         </div>
                         <button
                           type="button"
@@ -374,7 +365,6 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
                   </div>
                 </div>
 
-                {/* Siguiente acción */}
                 <div className="lg:col-span-4 bg-white border border-[#EAE2D8] rounded-2xl p-6 sm:p-7 flex flex-col justify-between shadow-[0_1px_2px_rgba(36,23,16,0.03)]">
                   <div>
                     <div className="w-10 h-10 rounded-full bg-[#F4EFE6] flex items-center justify-center text-[#6F4E37] mb-5">
@@ -384,10 +374,10 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
                       SIGUIENTE ACCIÓN
                     </span>
                     <h2 className="font-serif text-2xl text-[#241710] font-normal leading-snug">
-                      Mezcla pendiente de cierre
+                      Consolidar mezcla de exportación
                     </h2>
                     <p className="text-xs sm:text-[13px] text-[#73655B] mt-3 leading-relaxed">
-                      MX-024 requiere confirmar la proporción de tres lotes antes de asignar su contenedor.
+                      Combina lotes pergamino verificados para generar un nuevo lote de exportación en PostgreSQL y Neo4j.
                     </p>
                   </div>
 
@@ -396,7 +386,7 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
                     onClick={() => handleNavigate('procesos')}
                     className="mt-6 inline-flex items-center gap-1.5 text-xs font-bold text-[#241710] hover:text-[#9E6040] transition-colors cursor-pointer w-fit"
                   >
-                    <span>Ir a procesos y mezclas</span>
+                    <span>Ir a mezclas de exportación</span>
                     <span aria-hidden="true">→</span>
                   </button>
                 </div>
@@ -404,10 +394,13 @@ export const LuciaDashboard: React.FC<LuciaDashboardProps> = ({ user, onLogout }
             </div>
           )}
 
-          {activeSection === 'recepcion' && <RecepcionCosechasView />}
-          {activeSection === 'procesos' && <ProcesosMezclasView />}
-          {activeSection === 'trazabilidad' && <TrazabilidadView />}
-          {activeSection === 'contenedores' && <ContenedoresView />}
+          {activeSection === 'recepcion' && (
+            <RecepcionCosechasView lotes={lotes} onRefresh={loadData} />
+          )}
+          {activeSection === 'procesos' && (
+            <ProcesosMezclasView lotes={lotes} onRefresh={loadData} />
+          )}
+          {activeSection === 'trazabilidad' && <TrazabilidadView lotes={lotes} />}
         </main>
       </div>
     </div>
