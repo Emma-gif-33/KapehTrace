@@ -104,11 +104,11 @@ export class LinajeGraphRepository {
     const session = neo4jDriver.session();
     try {
       const cypher = `
-        MATCH (leOrigen:LoteExportacion {codigo: $codigo})<-[:MEZCLADO_EN*1..2]-(pa:Parcela)
-        MATCH (pa)-[:PRODUJO*1..3]->(hermanos:LoteExportacion)
+        MATCH (leOrigen:LoteExportacion {codigo: $codigo})<-[:MEZCLADO_EN]-(:LotePergamino)<-[:TRANSFORMADO_EN]-(:LoteCereza)<-[:PRODUJO]-(pa:Parcela)
+        MATCH (pa)-[:PRODUJO]->(:LoteCereza)-[:TRANSFORMADO_EN]->(:LotePergamino)-[:MEZCLADO_EN]->(hermanos:LoteExportacion)
         OPTIONAL MATCH (hermanos)-[:ESTIBADO_EN]->(c:Contenedor)
         RETURN 
-          pa.nombre AS parcela_origen,
+          collect(DISTINCT pa.nombre) AS parcelas_origen,
           collect(DISTINCT hermanos.id_pg) AS ids_lotes,
           collect(DISTINCT hermanos.codigo) AS codigos_lotes,
           collect(DISTINCT c.numero_contenedor) AS contenedores;
@@ -123,8 +123,9 @@ export class LinajeGraphRepository {
         };
       }
       const row = res.records[0];
+      const parcelas: string[] = (row.get('parcelas_origen') || []).filter(Boolean);
       return {
-        parcela_origen: row.get('parcela_origen') || 'Parcela en investigación',
+        parcela_origen: parcelas.length > 0 ? parcelas.join(', ') : 'Parcela en investigación',
         lotes_afectados_ids: (row.get('ids_lotes') || []).map((id: any) => Number(id)),
         lotes_afectados_codigos: row.get('codigos_lotes') || [],
         contenedores_en_riesgo: (row.get('contenedores') || []).filter(Boolean),
@@ -138,19 +139,51 @@ export class LinajeGraphRepository {
     const session = neo4jDriver.session();
     try {
       const cypher = `
-        MATCH path = (c:Contenedor)<-[:ESTIBADO_EN*0..1]-(le:LoteExportacion {codigo: $codigo})<-[:MEZCLADO_EN*0..1]-(lp:LotePergamino)<-[:TRANSFORMADO_EN*0..1]-(lc:LoteCereza)<-[:PRODUJO*0..1]-(pa:Parcela)<-[:POSEE*0..1]-(prod:Productor)
-        UNWIND nodes(path) AS n
-        UNWIND relationships(path) AS r
-        RETURN 
-          collect(DISTINCT { id: id(n), label: labels(n)[0], properties: properties(n) }) AS nodes,
-          collect(DISTINCT { from: id(startNode(r)), to: id(endNode(r)), type: type(r), properties: properties(r) }) AS edges;
+        MATCH (target {codigo: $codigo})
+        OPTIONAL MATCH pUp = (target)<-[:MEZCLADO_EN|TRANSFORMADO_EN|PRODUJO|POSEE*1..5]-(ancestor)
+        OPTIONAL MATCH pDown = (target)-[:MEZCLADO_EN|ESTIBADO_EN*1..2]->(descendant)
+        WITH target,
+             [x IN collect(pUp) WHERE x IS NOT NULL] + [y IN collect(pDown) WHERE y IS NOT NULL] AS paths
+        WITH [target] + REDUCE(acc = [], p IN paths | acc + nodes(p)) AS allNodes,
+             REDUCE(acc = [], p IN paths | acc + relationships(p)) AS allRels
+        UNWIND allNodes AS n
+        WITH collect(DISTINCT n) AS uniqNodes, allRels
+        UNWIND (CASE WHEN size(allRels) = 0 THEN [null] ELSE allRels END) AS r
+        RETURN
+          [n IN uniqNodes | { id: id(n), label: labels(n)[0], properties: properties(n) }] AS nodes,
+          [rel IN collect(DISTINCT r) WHERE rel IS NOT NULL | { from: id(startNode(rel)), to: id(endNode(rel)), type: type(rel), properties: properties(rel) }] AS edges;
       `;
       const res = await session.run(cypher, { codigo: codigoLote });
       const record = res.records[0];
       if (!record) return { nodes: [], edges: [] };
+
+      const toPlain = (val: any): any => {
+        if (val === null || val === undefined) return val;
+        if (typeof val === 'object' && typeof val.toNumber === 'function') return val.toNumber();
+        if (Array.isArray(val)) return val.map(toPlain);
+        if (typeof val === 'object') {
+          const out: Record<string, any> = {};
+          for (const [k, v] of Object.entries(val)) out[k] = toPlain(v);
+          return out;
+        }
+        return val;
+      };
+
+      const rawNodes = record.get('nodes') || [];
+      const rawEdges = record.get('edges') || [];
+
       return {
-        nodes: record.get('nodes'),
-        edges: record.get('edges'),
+        nodes: rawNodes.map((n: any) => ({
+          id: Number(n.id),
+          label: n.label,
+          properties: toPlain(n.properties),
+        })),
+        edges: rawEdges.map((e: any) => ({
+          from: Number(e.from),
+          to: Number(e.to),
+          type: e.type,
+          properties: toPlain(e.properties),
+        })),
       };
     } finally {
       await session.close();

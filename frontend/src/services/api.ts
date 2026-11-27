@@ -85,7 +85,11 @@ async function requestJson<T>(path: string, options?: RequestInit): Promise<T> {
   });
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data?.message || data?.error || `Error ${response.status}`);
+    const errMsg =
+      data?.message ||
+      (typeof data?.error === 'string' ? data.error : data?.error?.message) ||
+      `Error ${response.status}`;
+    throw new Error(errMsg);
   }
   return data as T;
 }
