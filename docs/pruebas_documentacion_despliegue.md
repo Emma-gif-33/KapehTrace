@@ -25,9 +25,9 @@ El archivo ejecutable `tests/integration/test_suite_completo.js` automatiza la v
 | **2** | **Funcional** | Las operaciones de la aplicación producen los resultados comerciales esperados. | `GET /api/lotes?estado=DISPONIBLE` retorna los lotes en bodega con peso neto y cálculo exacto de sacos enteros de 69 kg. | **APROBADA** |
 | **3** | **Integridad** | Las reglas y restricciones de cada modelo se cumplen sin excepciones. | Petición `POST /api/lotes` con `peso_neto_kg: -250` es interceptada por el validador Zod y rechazada con HTTP 400. Inserciones inválidas en Mongo son rechazadas por `$jsonSchema`. | **APROBADA** |
 | **4** | **Integración** | Una sola operación coordina correctamente dos o más bases de datos. | `GET /api/lotes/4/pasaporte` reúne en una sola respuesta JSON los datos comerciales de PostgreSQL, la ficha sensorial de 89.0 pts de MongoDB y la lista de caficultores de Neo4j. | **APROBADA** |
-| **5** | **Consistencia** | Las operaciones replicadas y las mezclas no dejan información contradictoria. | `POST /api/lotes/mezcla` valida que la suma de proporciones sea 1.00 ($60\% + 40\% = 100\%$). Si la suma difiere, la petición es abortada antes de tocar la base de datos. | **APROBADA** |
-| **6** | **Errores** | Se manejan fallos de conexión, datos inválidos y escrituras parciales (Saga). | `POST /api/calidad/alerta-cuarentena` registra el dictamen en Mongo, recorre el linaje en Neo4j y actualiza el estado transaccional en PostgreSQL a `EN_CUARENTENA`. | **APROBADA** |
-| **7** | **Rendimiento** | Los flujos prioritarios responden en tiempos razonables para el alcance. | La consulta integrada del Pasaporte Digital responde en **~65 ms** (promedio de 5 ejecuciones consecutivas, objetivo: < 300 ms). | **APROBADA** |
+| **5** | **Consistencia** | Las operaciones replicadas y las mezclas no dejan información contradictoria. | `POST /api/lotes/mezcla` valida que la suma de proporciones sea 1.00 ($60\% + 40\% = 100\%$). Si la suma difiere, la petición es abortada con HTTP 400 `VALIDATION_ERROR` antes de tocar la base de datos. Además se valida que los pergaminos existan, sean `PERGAMINO` y no estén en cuarentena (404/409). | **APROBADA** |
+| **6** | **Errores** | Se manejan fallos de conexión, datos inválidos y escrituras parciales (Saga). | `POST /api/calidad/alerta-cuarentena` registra el dictamen en Mongo, recorre el linaje en Neo4j y, en una sola transacción PostgreSQL, pone los lotes en `EN_CUARENTENA` y sus contratos en `EN_REVISION`. Si algún paso falla se compensa el expediente de Mongo; un lote inexistente devuelve 404. | **APROBADA** |
+| **7** | **Rendimiento** | Los flujos prioritarios responden en tiempos razonables para el alcance. | La consulta integrada del Pasaporte Digital responde en **14 ms** de promedio (5 ejecuciones consecutivas por corrida; 3 corridas del runner dieron 14, 14 y 14 ms; objetivo: < 300 ms). | **APROBADA** |
 
 ---
 
@@ -37,12 +37,7 @@ El archivo ejecutable `tests/integration/test_suite_completo.js` automatiza la v
   * **Sistema Operativo:** Windows 11 Pro / Docker Desktop con WSL2 backend.
   * **Hardware:** Procesador multi-núcleo x86_64, 16 GB RAM DDR4, SSD NVMe.
   * **Contenedores:** 4 contenedores en red interna puente (`postgres`, `mongodb`, `neo4j`, `backend`).
-* **Métricas de Latencia Registradas:**
-  * `GET /health` (Ping a 3 bases): **12 ms**.
-  * `GET /api/lotes` (Consulta SQL en PostgreSQL): **18 ms**.
-  * `POST /api/calidad/inspeccion` (Escritura BSON + Replicación SQL): **42 ms**.
-  * `GET /api/lotes/4/pasaporte` (Consulta Triple Políglota): **65 ms**.
-  * `POST /api/calidad/alerta-cuarentena` (Recorrido Cypher + Bloqueo SQL): **78 ms**.
+* **Métrica de latencia medida por el runner automatizado** (`test_suite_completo.js`, prueba 7): `GET /api/lotes/4/pasaporte` (consulta triple políglota, SQL → Mongo → Neo4j en serie) promedió **14 ms** en tres corridas consecutivas sobre los datos semilla (Docker Desktop en Windows 11). Las latencias de otros endpoints no se midieron en esta corrida; no se reportan cifras sin medición.
 * **Conclusión de Rendimiento:** La arquitectura asíncrona en Node.js con conexiones en pool y el protocolo binario Bolt de Neo4j proporcionan una velocidad de respuesta superior a los requerimientos de la industria cafetalera y del alcance académico.
 
 ---
@@ -54,7 +49,7 @@ Cualquier evaluador o colaborador puede clonar el repositorio y tener la soluci�
 ### Paso 1: Clonar el Repositorio y Configurar Variables
 ```bash
 git clone <URL_DEL_REPOSITORIO>
-cd eval.c3.2026.11
+cd KapehTrace
 
 # Copiar el archivo de variables de entorno de ejemplo
 cp .env.example .env
@@ -67,8 +62,17 @@ docker-compose up -d --build
 *En este paso Docker descargará e iniciará los contenedores de PostgreSQL 16, MongoDB 7.0, Neo4j 5.15 y compilará la imagen del backend en Node.js + TypeScript.*
 
 ### Paso 3: Inicializar y Poblar las Bases de Datos (Seeders)
+**Opción rápida (recomendada):** un solo comando re-siembra las tres bases (idempotente).
 ```bash
-# 1. Base Relacional (PostgreSQL)
+./database/seed_all.sh          # macOS / Linux / Git Bash   (opcional: prefijo de contenedor, p. ej. ./database/seed_all.sh kt)
+```
+```powershell
+.\database\seed_all.ps1         # Windows PowerShell
+```
+**Opción manual**, base por base:
+```bash
+# 1. Base Relacional (PostgreSQL). Nota: el esquema ya se aplica solo la primera vez que arranca el contenedor;
+#    si ya existe, omite el primer comando o recrea el esquema con seed_all.
 docker exec -i kapehtrace-postgres psql -U kapeh_admin -d kapeh_trace_db < database/relational/schema/01_create_tables.sql
 docker exec -i kapehtrace-postgres psql -U kapeh_admin -d kapeh_trace_db < database/relational/data/02_seed_data.sql
 
@@ -83,7 +87,8 @@ docker exec -i kapehtrace-neo4j cypher-shell -u neo4j -p kapeh_secret_2026 < dat
 
 ### Paso 4: Ejecutar la Batería Automatizada de Pruebas
 ```bash
-node tests/integration/test_suite_completo.js http://localhost:8000
+node tests/integration/test_suite_completo.js http://localhost:8000      # 7 pruebas obligatorias (termina con código de salida 1 si alguna falla)
+node tests/integration/test_complementarias.js http://localhost:8000     # 21 verificaciones de las correcciones v2 (re-sembrar antes de repetirlas)
 ```
 
 ---

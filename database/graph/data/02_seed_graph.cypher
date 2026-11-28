@@ -7,8 +7,8 @@ CREATE (p1:Productor {id_pg: 1, codigo: 'PROD-CH-001', nombre: 'Mateo Hernández
        (p3:Productor {id_pg: 3, codigo: 'PROD-CH-003', nombre: 'Gaspar López Méndez', region: 'Altos de Chiapas'});
 
 // 2. Creación de Parcelas
-CREATE (pa1:Parcela {codigo: 'PARC-01', nombre: 'Finca El Triunfo Alto', variedad: 'Geisha', altitud_msnm: 1650}),
-       (pa2:Parcela {codigo: 'PARC-02', nombre: 'Finca Santa Rosa Tacaná', variedad: 'Bourbon', altitud_msnm: 1780}),
+CREATE (pa1:Parcela {codigo: 'PARC-01', nombre: 'Finca El Triunfo Alto', variedad: 'Bourbon', altitud_msnm: 1650}),
+       (pa2:Parcela {codigo: 'PARC-02', nombre: 'Finca Santa Rosa Tacaná', variedad: 'Geisha', altitud_msnm: 1780}),
        (pa3:Parcela {codigo: 'PARC-03', nombre: 'Parcela Kolonté', variedad: 'Typica', altitud_msnm: 1550});
 
 // Relación Productor -> Parcela

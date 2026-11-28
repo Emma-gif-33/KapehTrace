@@ -26,16 +26,16 @@ db.fichas_calidad_sca.insertMany([
       tueste_agtron: 63.0
     },
     puntajes_sca: {
-      fragancia_aroma: 8.50,
-      sabor: 8.50,
-      sabor_residual: 8.25,
-      acidez: 8.50,
-      cuerpo: 8.50,
-      uniformidad: 10.00,
-      balance: 8.50,
-      taza_limpia: 10.00,
+      fragancia_aroma: 8.25,
+      sabor: 8.25,
+      sabor_residual: 8.00,
+      acidez: 8.25,
+      cuerpo: 8.25,
+      uniformidad: 9.50,
+      balance: 8.25,
+      taza_limpia: 9.50,
       dulzor: 10.00,
-      puntaje_catador: 8.50
+      puntaje_catador: 8.25
     },
     score_total: 86.50,
     notas_cata: ["Chocolate con leche", "Naranja dulce", "Caramelo"],
@@ -58,16 +58,16 @@ db.fichas_calidad_sca.insertMany([
       tueste_agtron: 60.0
     },
     puntajes_sca: {
-      fragancia_aroma: 9.00,
-      sabor: 8.75,
-      sabor_residual: 8.50,
-      acidez: 9.00,
-      cuerpo: 8.25,
-      uniformidad: 10.00,
-      balance: 8.75,
-      taza_limpia: 10.00,
-      dulzor: 10.00,
-      puntaje_catador: 8.75
+      fragancia_aroma: 8.75,
+      sabor: 8.50,
+      sabor_residual: 8.25,
+      acidez: 8.75,
+      cuerpo: 8.00,
+      uniformidad: 9.50,
+      balance: 8.50,
+      taza_limpia: 9.50,
+      dulzor: 9.75,
+      puntaje_catador: 8.50
     },
     score_total: 88.00,
     notas_cata: ["Jazmín", "Bergamota", "Durazno blanco", "Té negro"],
@@ -90,22 +90,58 @@ db.fichas_calidad_sca.insertMany([
       tueste_agtron: 62.0
     },
     puntajes_sca: {
-      fragancia_aroma: 9.00,
-      sabor: 8.75,
-      sabor_residual: 8.50,
-      acidez: 9.00,
-      cuerpo: 8.75,
-      uniformidad: 10.00,
-      balance: 8.75,
-      taza_limpia: 10.00,
+      fragancia_aroma: 8.75,
+      sabor: 8.50,
+      sabor_residual: 8.25,
+      acidez: 8.75,
+      cuerpo: 8.50,
+      uniformidad: 9.50,
+      balance: 8.50,
+      taza_limpia: 9.50,
       dulzor: 10.00,
-      puntaje_catador: 9.00
+      puntaje_catador: 8.75
     },
     score_total: 89.00,
     notas_cata: ["Jazmín intenso", "Mandarina", "Miel de abeja silvestre", "Vainilla"],
     conclusion: "Lote de Exportación Blend Presidencial / Cup of Excellence candidate"
+  },
+  {
+    lote_id: 5,
+    codigo_lote: "EXP-2026-CH-05",
+    fecha_evaluacion: new Date("2026-11-13T10:00:00Z"),
+    catador: {
+      nombre: "Roberto Cal y Mayor",
+      q_grader_licencia: "Q-88201",
+      laboratorio_sede: "Laboratorio SCA Tapachula"
+    },
+    muestra: {
+      humedad_porcentaje: 11.4,
+      actividad_agua_aw: 0.59,
+      densidad_aparente_gl: 698.0,
+      color_grano: "Verde pálido",
+      tueste_agtron: 64.0
+    },
+    puntajes_sca: {
+      fragancia_aroma: 7.75,
+      sabor: 7.75,
+      sabor_residual: 7.50,
+      acidez: 7.75,
+      cuerpo: 7.75,
+      uniformidad: 9.00,
+      balance: 7.75,
+      taza_limpia: 9.00,
+      dulzor: 9.00,
+      puntaje_catador: 7.75
+    },
+    score_total: 81.00,
+    notas_cata: ["Nuez", "Chocolate amargo", "Madera"],
+    conclusion: "Café de Especialidad estándar (lote posteriormente puesto en cuarentena sanitaria)"
   }
 ]);
+
+// Nota: el lote 3 (PERG-2026-03) se deja SIN ficha a propósito: su score_calidad_sca es NULL
+// (pendiente de catación). Sirve para demostrar el registro de una inspección nueva
+// (POST /api/calidad/inspeccion) sin chocar con el índice único de lote_id.
 
 // 2. Inserción de Expedientes de Certificación y Análisis Químico
 db.expedientes_certificacion.insertMany([

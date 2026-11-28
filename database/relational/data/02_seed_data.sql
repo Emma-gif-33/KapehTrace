@@ -7,20 +7,21 @@ INSERT INTO productores (codigo, nombre, region, curp_rfc, telefono) VALUES
 
 -- 2. Inserción de Fincas
 INSERT INTO fincas (productor_id, nombre_finca, municipio, comunidad, altitud_msnm, variedad_predominante) VALUES
-(1, 'Finca El Triunfo Alto', 'Ángel Albino Corzo', 'Nueva Palestina', 1650, 'Geisha'),
+(1, 'Finca El Triunfo Alto', 'Ángel Albino Corzo', 'Nueva Palestina', 1650, 'Bourbon'),
 (1, 'Parcela La Esperanza', 'Ángel Albino Corzo', 'Plan de Ayutla', 1420, 'Typica'),
-(2, 'Finca Santa Rosa Tacaná', 'Unión Juárez', 'Talquián', 1780, 'Bourbon'),
-(3, 'Parcela Kolonté', 'Tenejapa', 'Matzam', 1550, 'Caturra'),
+(2, 'Finca Santa Rosa Tacaná', 'Unión Juárez', 'Talquián', 1780, 'Geisha'),
+(3, 'Parcela Kolonté', 'Tenejapa', 'Matzam', 1550, 'Typica'),
 (4, 'Finca La Neblina', 'Rayón', 'La Selva', 1380, 'Mundo Novo');
 
 -- 3. Inserción de Lotes Físicos (Inventario y Estados)
+-- Nota: score_calidad_sca es un CACHE del score_total de MongoDB. El lote 3 queda en NULL (pendiente de catación).
 -- Nota: lote id 4 (EXP-2026-CH-04) representa el lote estelar que vincularemos con Mongo y Neo4j
 INSERT INTO lotes (id, codigo_lote, tipo_lote, estado, peso_neto_kg, sacos_69kg, bodega_ubicacion, score_calidad_sca, variedad, precio_base_kg_usd) VALUES
 (1, 'PERG-2026-01', 'PERGAMINO', 'LIQUIDADO', 10350.00, 150, 'Bodega Central Tapachula - Bloque A1', 86.50, 'Bourbon', 5.80),
 (2, 'PERG-2026-02', 'PERGAMINO', 'LIQUIDADO', 6900.00, 100, 'Bodega Central Tapachula - Bloque A2', 88.00, 'Geisha', 9.50),
-(3, 'PERG-2026-03', 'PERGAMINO', 'DISPONIBLE', 13800.00, 200, 'Bodega San Cristóbal - Bloque B1', 84.75, 'Typica', 5.20),
+(3, 'PERG-2026-03', 'PERGAMINO', 'DISPONIBLE', 13800.00, 200, 'Bodega San Cristóbal - Bloque B1', NULL, 'Typica', 5.20),
 (4, 'EXP-2026-CH-04', 'EXPORTACION', 'DISPONIBLE', 17250.00, 250, 'Bodega Puerto Chiapas - Muelle 3', 89.00, 'Blend Bourbon-Geisha', 8.20),
-(5, 'EXP-2026-CH-05', 'EXPORTACION', 'EN_CUARENTENA', 6900.00, 100, 'Bodega Puerto Chiapas - Muelle 2', 81.00, 'Mundo Novo', 4.50);
+(5, 'EXP-2026-CH-05', 'EXPORTACION', 'EN_CUARENTENA', 6900.00, 100, 'Bodega Puerto Chiapas - Muelle 2', 81.00, 'Typica', 4.50);
 
 -- Ajuste de la secuencia de IDs de lotes
 SELECT setval('lotes_id_seq', (SELECT MAX(id) FROM lotes));

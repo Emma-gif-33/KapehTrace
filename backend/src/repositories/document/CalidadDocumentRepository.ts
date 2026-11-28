@@ -1,3 +1,4 @@
+import { ObjectId } from 'mongodb';
 import { getMongoDb } from '../../config/database.js';
 import { FichaCalidadDTO } from '../../schemas/lotesSchemas.js';
 
@@ -42,10 +43,16 @@ export class CalidadDocumentRepository {
     return res.insertedId.toString();
   }
 
+  async deleteExpedienteById(id: string): Promise<void> {
+    await this.expedientesCollection.deleteOne({ _id: new ObjectId(id) });
+  }
+
   async findLotesByNotasCata(nota: string, minScore: number = 80.0): Promise<FichaCalidadDocument[]> {
+    // Se escapa la entrada del usuario para que no se interprete como expresión regular (evita ReDoS).
+    const notaEscapada = nota.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return this.fichasCollection
       .find({
-        notas_cata: { $regex: new RegExp(nota, 'i') },
+        notas_cata: { $regex: new RegExp(notaEscapada, 'i') },
         score_total: { $gte: minScore },
       })
       .sort({ score_total: -1 })

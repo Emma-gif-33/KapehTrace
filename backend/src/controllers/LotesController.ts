@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { LotesService } from '../services/LotesService.js';
+import { AppError } from '../errors.js';
 
 export class LotesController {
   constructor(private service: LotesService = new LotesService()) {}
@@ -30,8 +31,7 @@ export class LotesController {
       const idRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
       const loteId = parseInt(idRaw, 10);
       if (isNaN(loteId)) {
-        res.status(400).json({ success: false, message: 'El ID del lote debe ser un número entero válido.' });
-        return;
+        throw new AppError(400, 'VALIDATION_ERROR', 'El ID del lote debe ser un número entero válido.');
       }
 
       const pasaporte = await this.service.obtenerPasaporteDigital(loteId);

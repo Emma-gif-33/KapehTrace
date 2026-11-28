@@ -64,7 +64,7 @@ El catálogo se divide en dos bloques:
 
 #### OP-SQL-02: Creación de Contrato y Asignación de Sacos
 * **Propósito:** Formalizar un contrato de venta internacional y comprometer sacos físicos de inventario disponible en una transacción atómica.
-* **Base que interviene:** PostgreSQL 16.
+* **Base que interviene:** PostgreSQL 16. *(Se ejecuta directamente en `psql`; esta versión no expone endpoint REST para contratos, ver limitaciones.)*
 * **Parámetros de entrada:**
   * `numero_contrato`: string único.
   * `cliente_id`: bigint (FK existente).
@@ -75,12 +75,13 @@ El catálogo se divide en dos bloques:
 * **Consulta SQL (Bloque Transaccional Atómico):**
   ```sql
   BEGIN;
-  INSERT INTO contratos_venta (numero_contrato, cliente_id, fecha_firma, fecha_entrega_limite, total_sacos, monto_total_usd, saldo_pendiente_usd, estado)
-  VALUES ($1, $2, CURRENT_DATE, $3, $4, ($4 * 69.0 * $5), ($4 * 69.0 * $5), 'VIGENTE')
-  RETURNING id INTO STRICT v_contrato_id;
-
+  WITH nuevo AS (
+    INSERT INTO contratos_venta (numero_contrato, cliente_id, fecha_firma, fecha_entrega_limite, total_sacos, monto_total_usd, saldo_pendiente_usd, estado)
+    VALUES ($1, $2, CURRENT_DATE, $3, $4, ($4 * 69.0 * $5), ($4 * 69.0 * $5), 'VIGENTE')
+    RETURNING id
+  )
   INSERT INTO contrato_lotes (contrato_id, lote_id, sacos_comprometidos, precio_pactado_kg, subtotal_usd)
-  VALUES (v_contrato_id, $6, $4, $5, ($4 * 69.0 * $5));
+  SELECT id, $6, $4, $5, ($4 * 69.0 * $5) FROM nuevo;
 
   UPDATE lotes SET estado = 'EN_PROCESO' WHERE id = $6;
   COMMIT;
@@ -142,8 +143,8 @@ El catálogo se divide en dos bloques:
 * **Consulta MQL:**
   ```javascript
   db.fichas_calidad_sca.insertOne({
-    lote_id: 4,
-    codigo_lote: "EXP-2026-CH-04",
+    lote_id: 3,                      // el lote 3 (PERG-2026-03) no tiene ficha en los datos semilla
+    codigo_lote: "PERG-2026-03",
     fecha_evaluacion: new Date(),
     catador: {
       nombre: "Elena Morales Ruiz",
@@ -152,12 +153,12 @@ El catálogo se divide en dos bloques:
     },
     muestra: { humedad_porcentaje: 11.2, actividad_agua_aw: 0.58, tueste_agtron: 62.0 },
     puntajes_sca: {
-      fragancia_aroma: 9.0, sabor: 8.75, sabor_residual: 8.5, acidez: 9.0,
-      cuerpo: 8.75, uniformidad: 10.0, balance: 8.75, taza_limpia: 10.0,
-      dulzor: 10.0, puntaje_catador: 9.0
+      fragancia_aroma: 8.5, sabor: 8.5, sabor_residual: 8.0, acidez: 8.5,
+      cuerpo: 8.5, uniformidad: 10.0, balance: 8.5, taza_limpia: 10.0,
+      dulzor: 10.0, puntaje_catador: 8.5
     },
-    score_total: 89.0,
-    notas_cata: ["Jazmín", "Mandarina", "Miel de azahar"],
+    score_total: 89.0,              // = suma de los 10 atributos (el backend lo calcula así)
+    notas_cata: ["Panela", "Cacao"],
     conclusion: "Lote de Alta Especialidad"
   });
   ```
@@ -174,7 +175,7 @@ El catálogo se divide en dos bloques:
   ```javascript
   db.fichas_calidad_sca.find(
     {
-      notas_cata: { $in: ["Jazmín", "Floral"] },
+      notas_cata: /Jazm[ií]n|Floral/i,   // el backend usa regex insensible a mayúsculas
       score_total: { $gte: 88.0 }
     },
     {
@@ -192,9 +193,16 @@ El catálogo se divide en dos bloques:
     {
       "codigo_lote": "EXP-2026-CH-04",
       "score_total": 89.0,
-      "notas_cata": ["Jazmín intenso", "Mandarina", "Miel de abeja silvestre"],
+      "notas_cata": ["Jazmín intenso", "Mandarina", "Miel de abeja silvestre", "Vainilla"],
       "catador": { "nombre": "Elena Morales Ruiz" },
       "muestra": { "humedad_porcentaje": 11.2 }
+    },
+    {
+      "codigo_lote": "PERG-2026-02",
+      "score_total": 88.0,
+      "notas_cata": ["Jazmín", "Bergamota", "Durazno blanco", "Té negro"],
+      "catador": { "nombre": "Elena Morales Ruiz" },
+      "muestra": { "humedad_porcentaje": 11.0 }
     }
   ]
   ```
@@ -401,12 +409,11 @@ Estas operaciones representan la esencia del proyecto integrador: **un único en
 ### OP-INT-02: Consolidación de Mezcla de Exportación con Saga
 * **Propósito:** Registrar la mezcla física de pergaminos para crear un nuevo lote de exportación garantizando consistencia distribuida.
 * **Endpoint HTTP:** `POST /api/lotes/mezcla`
-* **Bases coordinadas:** PostgreSQL 16 (Fuente de verdad) -> Neo4j 5.15 -> MongoDB 7.0.
+* **Bases coordinadas:** PostgreSQL 16 (Fuente de verdad) -> Neo4j 5.15. *(MongoDB no participa: la ficha sensorial se registra aparte con `POST /api/calidad/inspeccion`.)*
 * **Flujo con Manejo de Errores y Compensación:**
-  1. *Fase 1 (SQL):* Inserta el lote en PostgreSQL. Si falla, aborta inmediatamente (HTTP 400).
-  2. *Fase 2 (Grafo):* Inserta los nodos y aristas `:MEZCLADO_EN` en Neo4j. Si Neo4j no responde, el servicio captura la excepción, marca el lote en PostgreSQL como `ERROR_SINCRONIZACION` o ejecuta `DELETE` de compensación, y retorna HTTP 500.
-  3. *Fase 3 (Documental):* Registra la ficha técnica preliminar en MongoDB. Si falla, revierte Neo4j y PostgreSQL.
-  4. *Fase 4 (Cache):* Si todo tuvo éxito, actualiza el campo de lectura rápida `lotes.score_calidad_sca` en PostgreSQL.
+  0. *Validaciones previas (sin escribir nada):* suma de proporciones = 1.0 ± 0.01 (HTTP 400 `VALIDATION_ERROR`); pergaminos sin repetir; cada pergamino debe existir en PostgreSQL (HTTP 404 `LOTE_NOT_FOUND`), ser de tipo `PERGAMINO` y no estar `EN_CUARENTENA` (HTTP 409 `LOTE_NO_APTO_PARA_MEZCLA`).
+  1. *Fase 1 (SQL):* Inserta el lote en PostgreSQL. Si el código ya existe, la restricción `UNIQUE` produce HTTP 409 `DUPLICATE_RESOURCE`.
+  2. *Fase 2 (Grafo):* Inserta el nodo y las aristas `:MEZCLADO_EN` en Neo4j y **verifica** que el número de aristas creadas coincida con el de componentes. Si Neo4j falla o crea menos aristas, el servicio elimina los restos del grafo, ejecuta `DELETE` de compensación sobre el lote en PostgreSQL y responde HTTP 502 `GRAPH_WRITE_FAILED`. Si la propia compensación falla, el lote queda en estado `ERROR_SINCRONIZACION` (HTTP 500 `COMPENSATION_FAILED`) para conciliación manual.
 
 ---
 
@@ -417,11 +424,12 @@ Estas operaciones representan la esencia del proyecto integrador: **un único en
 * **Flujo de orquestación:**
   1. *Registro Documental (MongoDB):* Almacena el informe del laboratorio con dictamen `NO_CONFORME` y analito excedido (ej. Glifosato 0.18 ppm).
   2. *Recorrido de Linaje (Neo4j):* Consulta el grafo para determinar qué parcelas produjeron ese grano y qué otros lotes de exportación comparten mezcla con esas parcelas.
-  3. *Bloqueo Transaccional (PostgreSQL):* Con la lista de IDs de lotes provista por Neo4j, ejecuta:
+  3. *Bloqueo Transaccional (PostgreSQL):* Con la lista de IDs de lotes provista por Neo4j, ejecuta **en una sola transacción** (`BEGIN … COMMIT`, con `ROLLBACK` ante cualquier error):
      ```sql
      UPDATE lotes SET estado = 'EN_CUARENTENA' WHERE id IN ($1, $2, ...);
      UPDATE contratos_venta SET estado = 'EN_REVISION' WHERE id IN (
          SELECT contrato_id FROM contrato_lotes WHERE lote_id IN ($1, $2, ...)
-     );
+     ) AND estado IN ('VIGENTE', 'BORRADOR');
      ```
+     Si falla Neo4j o PostgreSQL, el servicio elimina el expediente `NO_CONFORME` que acababa de insertar en MongoDB (compensación). Si el lote no existe, responde HTTP 404 sin escribir nada.
   4. *Respuesta Unificada:* Retorna a la interfaz gráfica la lista de lotes bloqueados, parcelas bajo sospecha y contratos comerciales suspendidos temporalmente.

@@ -48,7 +48,7 @@ let FALLBACK_LOTES: Lote[] = [
     peso_neto_kg: 13800,
     sacos_69kg: 200,
     bodega_ubicacion: 'Bodega San Cristóbal - Bloque B1',
-    score_calidad_sca: 84.75,
+    score_calidad_sca: null,
     variedad: 'Typica',
     precio_base_kg_usd: 5.2
   },
@@ -73,7 +73,7 @@ let FALLBACK_LOTES: Lote[] = [
     sacos_69kg: 100,
     bodega_ubicacion: 'Bodega Puerto Chiapas - Muelle 2',
     score_calidad_sca: 81.0,
-    variedad: 'Mundo Novo',
+    variedad: 'Typica',
     precio_base_kg_usd: 4.5
   }
 ];

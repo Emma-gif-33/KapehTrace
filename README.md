@@ -5,6 +5,8 @@
 *Proyecto Integrador de Bases de Datos*  
 *«Una aplicación, tres modelos de persistencia y una solución integrada»*  
 
+> 📄 **Documento consolidado en PDF** con los 8 entregables (propuesta, modelado, arquitectura, implementación, catálogo de operaciones, backend/API, aplicación y pruebas/despliegue): [`docs/KapehTrace_Propuesta_y_Plan_de_Integracion_de_Bases_de_Datos.pdf`](docs/KapehTrace_Propuesta_y_Plan_de_Integracion_de_Bases_de_Datos.pdf)
+
 ---
 
 ## Descripción del Proyecto
@@ -43,8 +45,9 @@ El sistema implementa una arquitectura en capas desacoplada. La interfaz gráfic
 El proyecto sigue con exactitud la estructura recomendada en la **Sección 10 de la guía docente de la UPChiapas**:
 
 ```text
-eval.c3.2026.11/
+KapehTrace/
 ├── docs/                                  # Documentación de los 8 Entregables Oficiales
+│   ├── KapehTrace_Propuesta_y_Plan_de_Integracion_de_Bases_de_Datos.pdf  # DOCUMENTO CONSOLIDADO (PDF): los 8 entregables
 │   ├── propuesta_kapehtrace.md            # Entregable 1: Propuesta y justificación
 │   ├── modelado_datos.md                  # Entregable 2: Modelado conceptual, ER, Docs y Grafo
 │   ├── arquitectura_tecnologica.md        # Entregable 3: Arquitectura, decisión tecnológica y Saga
@@ -54,6 +57,7 @@ eval.c3.2026.11/
 │   ├── aplicacion_e_integracion.md        # Entregable 7: Flujos funcionales e integración
 │   └── pruebas_documentacion_despliegue.md# Entregable 8: Matriz de pruebas y métricas
 ├── database/                              # Scripts reproducibles de persistencia
+│   ├── seed_all.sh / seed_all.ps1         # Re-siembra las 3 bases en un solo comando
 │   ├── relational/                        # PostgreSQL (schema/, data/, queries/)
 │   ├── document/                          # MongoDB (validators/, data/, queries/)
 │   └── graph/                             # Neo4j (schema/, data/, queries/)
@@ -64,7 +68,8 @@ eval.c3.2026.11/
 ├── frontend/                              # Espacio para interfaz de usuario web
 ├── tests/                                 # Batería automatizada de pruebas
 │   └── integration/
-│       └── test_suite_completo.js         # Ejecutor de las 7 pruebas obligatorias
+│       ├── test_suite_completo.js         # Ejecutor de las 7 pruebas obligatorias
+│       └── test_complementarias.js        # 21 verificaciones adicionales (errores tipados, Saga, cuarentena)
 ├── .env.example                           # Plantilla de configuración de variables de entorno
 ├── docker-compose.yml                     # Orquestación de contenedores y redes internas
 └── README.md                              # Este documento
@@ -100,6 +105,8 @@ docker-compose up -d --build
 ### Paso 3: Inicializar y Poblar las Bases de Datos (Seeders)
 Ejecuta los scripts iniciales con datos coherentes del estado de Chiapas:
 
+**Opción rápida:** `./database/seed_all.sh` (macOS/Linux/Git Bash) o `.\database\seed_all.ps1` (Windows) re-siembran las tres bases en un solo comando. O bien, manualmente:
+
 ```bash
 # 1. Base Relacional (PostgreSQL)
 docker exec -i kapehtrace-postgres psql -U kapeh_admin -d kapeh_trace_db < database/relational/schema/01_create_tables.sql
@@ -122,6 +129,11 @@ Para comprobar que los tres motores y el backend orquestador funcionan correctam
 
 ```bash
 node tests/integration/test_suite_completo.js http://localhost:8000
+```
+
+Pruebas complementarias (validan las correcciones de la v2: códigos 404/409, Saga con compensación, cuarentena con contratos en revisión). Modifican datos, así que re-siembra antes de repetirlas:
+```bash
+node tests/integration/test_complementarias.js http://localhost:8000
 ```
 
 El script verificará automáticamente:

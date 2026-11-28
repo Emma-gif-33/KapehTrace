@@ -7,6 +7,7 @@ import {
   FichaCalidadDTO,
   AlertaCuarentenaDTO,
 } from '../schemas/lotesSchemas.js';
+import { AppError } from '../errors.js';
 
 export class LotesService {
   constructor(
@@ -25,7 +26,7 @@ export class LotesService {
     // A. Consultar Base Relacional (Fuente de Verdad Comercial)
     const lote = await this.relRepo.findById(loteId);
     if (!lote) {
-      throw new Error(`LOTE_NOT_FOUND: El lote con ID ${loteId} no existe.`);
+      throw new AppError(404, 'LOTE_NOT_FOUND', `El lote con ID ${loteId} no existe.`);
     }
     const contrato = await this.relRepo.findContratoByLoteId(loteId);
 
@@ -81,33 +82,49 @@ export class LotesService {
     // Validar proporciones físicas
     const sumaProporciones = dto.componentes.reduce((acc, c) => acc + c.proporcion, 0);
     if (Math.abs(sumaProporciones - 1.0) > 0.01) {
-      throw new Error('VALIDATION_ERROR: La suma de las proporciones de mezcla debe ser igual a 1.0 (100%).');
+      throw new AppError(400, 'VALIDATION_ERROR', 'La suma de las proporciones de mezcla debe ser igual a 1.0 (100%).');
+    }
+
+    // Validar que los pergaminos aportantes existan, sean PERGAMINO, no estén en cuarentena y no se repitan
+    const codigos = dto.componentes.map((c) => c.codigo_pergamino);
+    if (new Set(codigos).size !== codigos.length) {
+      throw new AppError(400, 'VALIDATION_ERROR', 'Un mismo lote pergamino no puede aparecer dos veces en la mezcla.');
+    }
+    const encontrados = await this.relRepo.findByCodigos(codigos);
+    const faltantes = codigos.filter((cod) => !encontrados.some((l) => l.codigo_lote === cod));
+    if (faltantes.length > 0) {
+      throw new AppError(404, 'LOTE_NOT_FOUND', `Lote(s) pergamino inexistente(s): ${faltantes.join(', ')}.`);
+    }
+    const invalidos = encontrados.filter((l) => l.tipo_lote !== 'PERGAMINO' || l.estado === 'EN_CUARENTENA');
+    if (invalidos.length > 0) {
+      throw new AppError(
+        409,
+        'LOTE_NO_APTO_PARA_MEZCLA',
+        `Los siguientes lotes no pueden mezclarse (deben ser PERGAMINO y no estar en cuarentena): ${invalidos
+          .map((l) => `${l.codigo_lote} [${l.tipo_lote}/${l.estado}]`)
+          .join(', ')}.`
+      );
     }
 
     const pesoTotalCalculado = dto.componentes.reduce((acc, c) => acc + c.kg_aportados, 0);
     const sacosCalculados = Math.floor(pesoTotalCalculado / 69.0);
 
-    // PASO 1: Escribir en PostgreSQL (Fuente de Verdad)
-    let nuevoLoteSQL;
-    try {
-      nuevoLoteSQL = await this.relRepo.create(
-        {
-          codigo_lote: dto.codigo_exportacion,
-          tipo_lote: 'EXPORTACION',
-          peso_neto_kg: pesoTotalCalculado,
-          bodega_ubicacion: dto.bodega_ubicacion,
-          variedad: dto.variedad_blend,
-          precio_base_kg_usd: dto.precio_base_kg_usd,
-        },
-        sacosCalculados
-      );
-    } catch (sqlError) {
-      throw new Error(`SQL_WRITE_FAILED: ${(sqlError as Error).message}`);
-    }
+    // PASO 1: Escribir en PostgreSQL (Fuente de Verdad). Un código duplicado produce 409 (clave única).
+    const nuevoLoteSQL = await this.relRepo.create(
+      {
+        codigo_lote: dto.codigo_exportacion,
+        tipo_lote: 'EXPORTACION',
+        peso_neto_kg: pesoTotalCalculado,
+        bodega_ubicacion: dto.bodega_ubicacion,
+        variedad: dto.variedad_blend,
+        precio_base_kg_usd: dto.precio_base_kg_usd,
+      },
+      sacosCalculados
+    );
 
-    // PASO 2: Escribir topología en Neo4j
+    // PASO 2: Escribir topología en Neo4j y verificar que se crearon TODAS las aristas de mezcla
     try {
-      await this.graphRepo.createMezclaExportacion(
+      const mezclasCreadas = await this.graphRepo.createMezclaExportacion(
         nuevoLoteSQL.id,
         dto.codigo_exportacion,
         sacosCalculados,
@@ -118,11 +135,36 @@ export class LotesService {
           kg_aportados: c.kg_aportados,
         }))
       );
+      if (mezclasCreadas !== dto.componentes.length) {
+        throw new Error(
+          `Se esperaban ${dto.componentes.length} aristas MEZCLADO_EN y Neo4j creó ${mezclasCreadas} (¿pergamino sin nodo en el grafo?).`
+        );
+      }
     } catch (graphError) {
-      // COMPENSACIÓN: Si Neo4j falla, revertir PostgreSQL para evitar datos huérfanos
-      console.error('⚠️ Fallo en Neo4j. Aplicando compensación en PostgreSQL...');
-      await this.relRepo.delete(nuevoLoteSQL.id);
-      throw new Error(`GRAPH_WRITE_FAILED: Error registrando mezcla en Neo4j. Operación revertida.`);
+      // COMPENSACIÓN: si Neo4j falla, revertir PostgreSQL (y limpiar restos parciales del grafo)
+      console.error('⚠️ Fallo en Neo4j. Aplicando compensación en PostgreSQL...', (graphError as Error).message);
+      // 1) Limpieza del grafo "mejor esfuerzo": si Neo4j está caído no hay nada que limpiar y no debe impedir la compensación en SQL
+      await this.graphRepo
+        .deleteMezcla(dto.codigo_exportacion)
+        .catch((e) => console.warn('Limpieza del grafo omitida:', (e as Error).message));
+      // 2) Compensación crítica en PostgreSQL
+      try {
+        await this.relRepo.delete(nuevoLoteSQL.id);
+      } catch (compError) {
+        // Si la compensación misma falla, el lote queda marcado para conciliación manual
+        console.error('🚨 Falló la compensación:', (compError as Error).message);
+        await this.relRepo.updateEstado(nuevoLoteSQL.id, 'ERROR_SINCRONIZACION').catch(() => undefined);
+        throw new AppError(
+          500,
+          'COMPENSATION_FAILED',
+          `Neo4j falló y no se pudo revertir PostgreSQL: el lote ${dto.codigo_exportacion} quedó en estado ERROR_SINCRONIZACION.`
+        );
+      }
+      throw new AppError(
+        502,
+        'GRAPH_WRITE_FAILED',
+        'Error registrando la mezcla en Neo4j. Operación revertida en PostgreSQL.'
+      );
     }
 
     return {
@@ -150,7 +192,20 @@ export class LotesService {
 
     const roundedScore = Math.round(scoreTotal * 100) / 100;
 
-    // A. Persistir en MongoDB (Fuente de Verdad de Evaluación Sensorial)
+    // Validar que el lote exista en la fuente de verdad (PostgreSQL) y que el código coincida con el id
+    const lote = await this.relRepo.findById(dto.lote_id);
+    if (!lote) {
+      throw new AppError(404, 'LOTE_NOT_FOUND', `El lote con ID ${dto.lote_id} no existe.`);
+    }
+    if (lote.codigo_lote !== dto.codigo_lote) {
+      throw new AppError(
+        400,
+        'VALIDATION_ERROR',
+        `El código ${dto.codigo_lote} no corresponde al lote ${dto.lote_id} (${lote.codigo_lote}).`
+      );
+    }
+
+    // A. Persistir en MongoDB (Fuente de Verdad de Evaluación Sensorial). Una ficha duplicada produce 409 (índice único).
     const docId = await this.docRepo.insertFicha({
       ...dto,
       score_total: roundedScore,
@@ -158,9 +213,11 @@ export class LotesService {
     });
 
     // B. Replicación Controlada en PostgreSQL (Cache de lectura rápida)
+    let replicadoEnSql = true;
     try {
       await this.relRepo.updateScoreSca(dto.lote_id, roundedScore);
     } catch (err) {
+      replicadoEnSql = false;
       console.warn(`Advertencia al replicar score en PostgreSQL para lote ${dto.lote_id}:`, (err as Error).message);
     }
 
@@ -168,15 +225,19 @@ export class LotesService {
       success: true,
       document_id: docId,
       score_total: roundedScore,
+      score_replicado_en_postgres: replicadoEnSql,
       codigo_lote: dto.codigo_lote,
       categoria: roundedScore >= 85.0 ? 'Café de Especialidad Excelente' : 'Café Estándar',
     };
   }
 
-  // 6. Protocolo de Alerta Sanitaria y Cuarentena Preventiva en Cascada (Mongo + Neo4j + SQL)
+  // 6. Protocolo de Alerta Sanitaria y Cuarentena Preventiva en Cascada (SQL + Mongo + Neo4j + SQL)
   async ejecutarProtocoloCuarentena(alerta: AlertaCuarentenaDTO) {
     const lote = await this.relRepo.findByCodigo(alerta.codigo_lote);
-    const loteId = lote ? lote.id : 0;
+    if (!lote) {
+      throw new AppError(404, 'LOTE_NOT_FOUND', `El lote ${alerta.codigo_lote} no existe en el inventario.`);
+    }
+    const loteId = lote.id;
 
     // A. Registrar expediente técnico de anomalía en MongoDB
     const expedienteId = await this.docRepo.insertExpediente({
@@ -206,29 +267,36 @@ export class LotesService {
       motivo_cuarentena: alerta.motivo_rechazo,
     });
 
-    // B. Consultar Neo4j para determinar todo el linaje y contenedores afectados
-    const impacto = await this.graphRepo.findImpactoPorLote(alerta.codigo_lote);
+    try {
+      // B. Consultar Neo4j para determinar todo el linaje y contenedores afectados
+      const impacto = await this.graphRepo.findImpactoPorLote(alerta.codigo_lote);
 
-    // Asegurar que el lote reportado esté incluido en la lista de IDs a bloquear
-    const idsParaBloquear = Array.from(new Set([...impacto.lotes_afectados_ids, ...(loteId ? [loteId] : [])]));
+      // Asegurar que el lote reportado esté incluido en la lista de IDs a bloquear
+      const idsParaBloquear = Array.from(new Set([...impacto.lotes_afectados_ids, loteId]));
 
-    // C. Bloqueo Transaccional en PostgreSQL
-    let lotesBloqueadosCount = 0;
-    if (idsParaBloquear.length > 0) {
-      lotesBloqueadosCount = await this.relRepo.updateEstadoBatch(idsParaBloquear, 'EN_CUARENTENA');
+      // C. Bloqueo transaccional en PostgreSQL: lotes -> EN_CUARENTENA y contratos -> EN_REVISION (todo o nada)
+      const { lotesBloqueados, contratosEnRevision } =
+        await this.relRepo.aplicarCuarentenaTransaccional(idsParaBloquear);
+
+      return {
+        success: true,
+        protocolo: 'CUARENTENA_PREVENTIVA_APLICADA',
+        expediente_mongo_id: expedienteId,
+        parcela_origen_sospechosa: impacto.parcela_origen,
+        lotes_bloqueados_count: lotesBloqueados,
+        lotes_bloqueados_ids: idsParaBloquear,
+        codigos_lotes_afectados: impacto.lotes_afectados_codigos,
+        contenedores_en_riesgo: impacto.contenedores_en_riesgo,
+        contratos_en_revision: contratosEnRevision,
+        mensaje: `Se bloquearon ${lotesBloqueados} lotes y ${contratosEnRevision.length} contrato(s) pasaron a EN_REVISION; contenedores en riesgo: ${impacto.contenedores_en_riesgo.length}.`,
+      };
+    } catch (err) {
+      // COMPENSACIÓN: si falló Neo4j o PostgreSQL, no dejar un expediente NO_CONFORME huérfano
+      await this.docRepo
+        .deleteExpedienteById(expedienteId)
+        .catch((e) => console.error('🚨 No se pudo compensar el expediente en MongoDB:', (e as Error).message));
+      throw err;
     }
-
-    return {
-      success: true,
-      protocolo: 'CUARENTENA_PREVENTIVA_APLICADA',
-      expediente_mongo_id: expedienteId,
-      parcela_origen_sospechosa: impacto.parcela_origen,
-      lotes_bloqueados_count: lotesBloqueadosCount,
-      lotes_bloqueados_ids: idsParaBloquear,
-      codigos_lotes_afectados: impacto.lotes_afectados_codigos,
-      contenedores_en_riesgo: impacto.contenedores_en_riesgo,
-      mensaje: `Se bloquearon ${lotesBloqueadosCount} lotes y se emitieron alertas preventivas para contratos y contenedores marítimos.`,
-    };
   }
 
   // 7. Visualización de Topología en Grafo para el Frontend

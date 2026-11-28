@@ -63,6 +63,11 @@ export class LotesRelationalRepository {
     return this.mapRowToEntity(result.rows[0]);
   }
 
+  async findByCodigos(codigos: string[]): Promise<LoteRelationalEntity[]> {
+    const result = await pgPool.query(`SELECT * FROM lotes WHERE codigo_lote = ANY($1::text[]);`, [codigos]);
+    return result.rows.map(this.mapRowToEntity);
+  }
+
   async create(data: CreateLoteDTO, sacos: number): Promise<LoteRelationalEntity> {
     const query = `
       INSERT INTO lotes (codigo_lote, tipo_lote, estado, peso_neto_kg, sacos_69kg, bodega_ubicacion, variedad, precio_base_kg_usd)
@@ -98,6 +103,41 @@ export class LotesRelationalRepository {
     const query = `UPDATE lotes SET estado = $1, updated_at = CURRENT_TIMESTAMP WHERE id = ANY($2::bigint[]);`;
     const result = await pgPool.query(query, [estado, ids]);
     return result.rowCount || 0;
+  }
+
+  /**
+   * Cuarentena en UNA transacción: bloquea los lotes y pone EN_REVISION los
+   * contratos VIGENTE/BORRADOR que los incluyen. Todo o nada (ROLLBACK ante error).
+   */
+  async aplicarCuarentenaTransaccional(
+    ids: number[]
+  ): Promise<{ lotesBloqueados: number; contratosEnRevision: string[] }> {
+    if (ids.length === 0) return { lotesBloqueados: 0, contratosEnRevision: [] };
+    const client = await pgPool.connect();
+    try {
+      await client.query('BEGIN');
+      const lotes = await client.query(
+        `UPDATE lotes SET estado = 'EN_CUARENTENA', updated_at = CURRENT_TIMESTAMP WHERE id = ANY($1::bigint[]);`,
+        [ids]
+      );
+      const contratos = await client.query(
+        `UPDATE contratos_venta SET estado = 'EN_REVISION'
+          WHERE estado IN ('VIGENTE', 'BORRADOR')
+            AND id IN (SELECT contrato_id FROM contrato_lotes WHERE lote_id = ANY($1::bigint[]))
+          RETURNING numero_contrato;`,
+        [ids]
+      );
+      await client.query('COMMIT');
+      return {
+        lotesBloqueados: lotes.rowCount || 0,
+        contratosEnRevision: contratos.rows.map((r) => r.numero_contrato),
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   async delete(id: number): Promise<void> {

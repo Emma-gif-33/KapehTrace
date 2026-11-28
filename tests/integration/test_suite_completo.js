@@ -144,8 +144,8 @@ async function runTestSuite() {
       }),
     });
     const data = await res.json();
-    if (res.status >= 400 && data.success === false) {
-      pass(`El servicio detectó proporciones inconsistentes y evitó crear datos corruptos.`);
+    if (res.status === 400 && data.success === false && data.error?.code === 'VALIDATION_ERROR') {
+      pass(`El servicio detectó proporciones inconsistentes (HTTP 400 VALIDATION_ERROR)  y evitó crear datos corruptos.`);
       passedTests++;
     } else {
       fail(`Se permitió una mezcla con proporción mayor al 100%.`);
@@ -216,8 +216,12 @@ async function runTestSuite() {
     console.log(`${colors.green}🎉 TODAS LAS PRUEBAS DE INTEGRACIÓN OBLIGATORIAS PASARON CON ÉXITO.${colors.reset}`);
   } else {
     console.log(`${colors.yellow}⚠️ Algunas pruebas fallaron. Verifica que los servicios de Docker estén corriendo.${colors.reset}`);
+    process.exitCode = 1; // permite que CI / scripts detecten el fallo
   }
   console.log(`${colors.bold}${colors.cyan}======================================================================${colors.reset}\n`);
 }
 
-runTestSuite();
+runTestSuite().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

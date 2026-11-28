@@ -35,7 +35,8 @@ EXCEPTION WHEN check_violation THEN
 END $$;
 
 -- 4. Prueba de Bloqueo Transaccional por Cuarentena
--- Simulación de lo que ejecuta el Backend ante alerta sanitaria:
+-- Simulación de lo que ejecuta el Backend ante alerta sanitaria.
+-- Se ejecuta dentro de una transacción que termina en ROLLBACK para NO alterar el estado inicial de los datos semilla.
 BEGIN;
 UPDATE lotes 
 SET estado = 'EN_CUARENTENA', updated_at = CURRENT_TIMESTAMP 
@@ -45,4 +46,4 @@ WHERE id = 4;
 SELECT id, codigo_lote, estado, score_calidad_sca, updated_at 
 FROM lotes 
 WHERE id = 4;
-COMMIT;
+ROLLBACK;

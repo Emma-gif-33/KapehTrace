@@ -49,7 +49,7 @@ A continuación se demuestra la ejecución de casos de uso donde cada motor resu
         "peso_neto_kg": 13800.0,
         "sacos_69kg": 200,
         "bodega_ubicacion": "Bodega San Cristóbal - Bloque B1",
-        "score_calidad_sca": 84.75,
+        "score_calidad_sca": null,
         "variedad": "Typica",
         "precio_base_kg_usd": 5.2
       }
@@ -147,11 +147,11 @@ A continuación se demuestra la ejecución de casos de uso donde cada motor resu
 ### 3.1. Caso Integrado 1: Consulta del Pasaporte Digital del Lote
 * **Endpoint HTTP:** `GET /api/lotes/4/pasaporte`
 * **Mecanismo de Coordinación:**
-  1. El servicio `LotesService.obtenerPasaporteDigital(4)` realiza tres consultas en paralelo:
+  1. El servicio `LotesService.obtenerPasaporteDigital(4)` realiza tres consultas **en serie** (SQL → MongoDB → Neo4j; el código del lote que usa Neo4j se obtiene de la consulta SQL):
      * A PostgreSQL: consulta tabla `lotes` y `contratos_venta` por ID primario `4`.
      * A MongoDB: consulta colección `fichas_calidad_sca` filtrando `{ lote_id: 4 }`.
      * A Neo4j: ejecuta consulta Cypher buscando el camino `(le:LoteExportacion {codigo: 'EXP-2026-CH-04'})<-[:MEZCLADO_EN]-(lp)<-...-(prod)`.
-  2. El servicio consolida los tres resultados en un único DTO tipado y devuelve la respuesta al frontend en menos de 80 ms.
+  2. El servicio consolida los tres resultados en un único DTO tipado y devuelve la respuesta al frontend en decenas de milisegundos (≈14 ms de promedio en el entorno de pruebas documentado).
 * **Respuesta Unificada:**
   ```json
   {

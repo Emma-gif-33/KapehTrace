@@ -5,9 +5,9 @@ print("=== 1. Consulta de Ficha SCA Completa por Lote ===");
 const ficha = db.fichas_calidad_sca.findOne({ codigo_lote: "EXP-2026-CH-04" });
 printjson(ficha);
 
-print("\n=== 2. Filtro de Lotes con Notas Florales ('Jazmín') y Calidad >= 88.0 ===");
+print("\n=== 2. Filtro de Lotes con Notas Florales (regex /Jazmín/i) y Calidad >= 88.0 ===");
 const lotesFlorales = db.fichas_calidad_sca.find({
-  notas_cata: "Jazmín",
+  notas_cata: /Jazm[ií]n/i,   // regex: coincide con "Jazmín" y "Jazmín intenso" (igual que el backend)
   score_total: { $gte: 88.0 }
 }, { codigo_lote: 1, score_total: 1, notas_cata: 1, "catador.nombre": 1 }).toArray();
 printjson(lotesFlorales);
