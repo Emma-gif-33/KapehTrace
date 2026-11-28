@@ -44,9 +44,9 @@ export function errorHandler(
   }
 
   if (statusCode >= 500) {
-    console.error('💥 Error detectado en el pipeline del servidor:', err);
+    console.error('Error detectado en el pipeline del servidor:', err);
   } else {
-    console.warn(`⚠️ ${code} (${statusCode}): ${message}`);
+    console.warn(`${code} (${statusCode}): ${message}`);
   }
 
   res.status(statusCode).json({

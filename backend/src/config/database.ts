@@ -49,7 +49,7 @@ export async function checkDatabaseConnections(): Promise<{
     const res = await pgPool.query('SELECT 1 AS alive');
     status.postgres = (res.rows[0]?.alive === 1);
   } catch (error) {
-    console.error('❌ Error conectando a PostgreSQL:', (error as Error).message);
+    console.error('Error conectando a PostgreSQL:', (error as Error).message);
   }
 
   // Test MongoDB
@@ -57,7 +57,7 @@ export async function checkDatabaseConnections(): Promise<{
     await mongoClient.db(env.MONGO_DB).command({ ping: 1 });
     status.mongodb = true;
   } catch (error) {
-    console.error('❌ Error conectando a MongoDB:', (error as Error).message);
+    console.error('Error conectando a MongoDB:', (error as Error).message);
   }
 
   // Test Neo4j
@@ -65,7 +65,7 @@ export async function checkDatabaseConnections(): Promise<{
     const serverInfo = await neo4jDriver.getServerInfo();
     status.neo4j = !!serverInfo.address;
   } catch (error) {
-    console.error('❌ Error conectando a Neo4j:', (error as Error).message);
+    console.error('Error conectando a Neo4j:', (error as Error).message);
   }
 
   return status;

@@ -5,7 +5,7 @@
 *Proyecto Integrador de Bases de Datos*  
 *«Una aplicación, tres modelos de persistencia y una solución integrada»*  
 
-> 📄 **Documento consolidado en PDF** con los 8 entregables (propuesta, modelado, arquitectura, implementación, catálogo de operaciones, backend/API, aplicación y pruebas/despliegue): [`docs/KapehTrace_Propuesta_y_Plan_de_Integracion_de_Bases_de_Datos.pdf`](docs/KapehTrace_Propuesta_y_Plan_de_Integracion_de_Bases_de_Datos.pdf)
+> **Documento consolidado en PDF** con los 8 entregables (propuesta, modelado, arquitectura, implementación, catálogo de operaciones, backend/API, aplicación y pruebas/despliegue): [`docs/KapehTrace_Propuesta_y_Plan_de_Integracion_de_Bases_de_Datos.pdf`](docs/KapehTrace_Propuesta_y_Plan_de_Integracion_de_Bases_de_Datos.pdf)
 
 ---
 

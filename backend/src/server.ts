@@ -22,10 +22,10 @@ const server = app.listen(env.PORT, env.HOST, async () => {
 
 // Manejo de señales de terminación elegante
 process.on('SIGINT', async () => {
-  console.log('\n🛑 Cerrando servidor y pools de bases de datos...');
+  console.log('\nCerrando servidor y pools de bases de datos...');
   server.close(async () => {
     await closeDatabaseConnections();
-    console.log('✅ Conexiones cerradas. Servidor apagado limpiamente.');
+    console.log('Conexiones cerradas. Servidor apagado limpiamente.');
     process.exit(0);
   });
 });

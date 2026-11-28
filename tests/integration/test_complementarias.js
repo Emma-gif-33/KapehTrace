@@ -30,9 +30,9 @@ function check(nombre, cond, detalle) {
   total++;
   if (cond) {
     ok++;
-    console.log(`  ✔ [PASS] ${nombre}`);
+    console.log(`  [PASS] ${nombre}`);
   } else {
-    console.log(`  ✖ [FAIL] ${nombre}`);
+    console.log(`  [FAIL] ${nombre}`);
     if (detalle !== undefined) console.log('    Detalle:', typeof detalle === 'string' ? detalle : JSON.stringify(detalle));
   }
 }

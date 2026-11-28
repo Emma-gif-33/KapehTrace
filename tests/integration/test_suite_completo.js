@@ -18,18 +18,18 @@ const colors = {
 };
 
 function pass(msg) {
-  console.log(`${colors.green}  ✔ [PASS]${colors.reset} ${msg}`);
+  console.log(`${colors.green}  [PASS]${colors.reset} ${msg}`);
 }
 
 function fail(msg, err) {
-  console.error(`${colors.red}  ✖ [FAIL]${colors.reset} ${msg}`);
+  console.error(`${colors.red}  [FAIL]${colors.reset} ${msg}`);
   if (err) console.error(`    ${colors.yellow}Detalle:${colors.reset}`, err);
 }
 
 async function runTestSuite() {
   console.log(`\n${colors.bold}${colors.cyan}======================================================================`);
-  console.log(`☕ KapehTrace: Ejecución de Batería de Pruebas de Integración Políglota`);
-  console.log(`📡 Endpoint Target: ${BASE_URL}`);
+  console.log(`KapehTrace: Ejecución de Batería de Pruebas de Integración Políglota`);
+  console.log(`Endpoint Target: ${BASE_URL}`);
   console.log(`======================================================================${colors.reset}\n`);
 
   let totalTests = 7;
@@ -211,11 +211,11 @@ async function runTestSuite() {
   // RESUMEN FINAL
   // --------------------------------------------------------------------------
   console.log(`\n${colors.bold}${colors.cyan}======================================================================`);
-  console.log(`📊 Resumen de Resultados: ${passedTests} de ${totalTests} pruebas superadas.`);
+  console.log(`Resumen de Resultados: ${passedTests} de ${totalTests} pruebas superadas.`);
   if (passedTests === totalTests) {
-    console.log(`${colors.green}🎉 TODAS LAS PRUEBAS DE INTEGRACIÓN OBLIGATORIAS PASARON CON ÉXITO.${colors.reset}`);
+    console.log(`${colors.green}TODAS LAS PRUEBAS DE INTEGRACIÓN OBLIGATORIAS PASARON CON ÉXITO.${colors.reset}`);
   } else {
-    console.log(`${colors.yellow}⚠️ Algunas pruebas fallaron. Verifica que los servicios de Docker estén corriendo.${colors.reset}`);
+    console.log(`${colors.yellow}Algunas pruebas fallaron. Verifica que los servicios de Docker estén corriendo.${colors.reset}`);
     process.exitCode = 1; // permite que CI / scripts detecten el fallo
   }
   console.log(`${colors.bold}${colors.cyan}======================================================================${colors.reset}\n`);

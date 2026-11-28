@@ -142,7 +142,7 @@ export class LotesService {
       }
     } catch (graphError) {
       // COMPENSACIÓN: si Neo4j falla, revertir PostgreSQL (y limpiar restos parciales del grafo)
-      console.error('⚠️ Fallo en Neo4j. Aplicando compensación en PostgreSQL...', (graphError as Error).message);
+      console.error('Fallo en Neo4j. Aplicando compensación en PostgreSQL...', (graphError as Error).message);
       // 1) Limpieza del grafo "mejor esfuerzo": si Neo4j está caído no hay nada que limpiar y no debe impedir la compensación en SQL
       await this.graphRepo
         .deleteMezcla(dto.codigo_exportacion)
@@ -152,7 +152,7 @@ export class LotesService {
         await this.relRepo.delete(nuevoLoteSQL.id);
       } catch (compError) {
         // Si la compensación misma falla, el lote queda marcado para conciliación manual
-        console.error('🚨 Falló la compensación:', (compError as Error).message);
+        console.error('Falló la compensación:', (compError as Error).message);
         await this.relRepo.updateEstado(nuevoLoteSQL.id, 'ERROR_SINCRONIZACION').catch(() => undefined);
         throw new AppError(
           500,
@@ -294,7 +294,7 @@ export class LotesService {
       // COMPENSACIÓN: si falló Neo4j o PostgreSQL, no dejar un expediente NO_CONFORME huérfano
       await this.docRepo
         .deleteExpedienteById(expedienteId)
-        .catch((e) => console.error('🚨 No se pudo compensar el expediente en MongoDB:', (e as Error).message));
+        .catch((e) => console.error('No se pudo compensar el expediente en MongoDB:', (e as Error).message));
       throw err;
     }
   }

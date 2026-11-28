@@ -108,7 +108,7 @@ Captura cualquier excepción no controlada en el pipeline y garantiza que la int
 ## 5. Documentación Interactiva de Contratos con Swagger UI
 
 Para que la compañera encargada del frontend cuente con una referencia viva y autónoma, el backend expone la especificación OpenAPI 3.0 en la ruta:
-👉 **`http://localhost:8000/api-docs`**
+**`http://localhost:8000/api-docs`**
 
 ### Catálogo de Rutas Expuestas:
 
